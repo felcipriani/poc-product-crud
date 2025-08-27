@@ -23,12 +23,14 @@ A comprehensive Next.js-based product management system that handles complex pro
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository-url>
    cd product-management-system
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    # or
@@ -38,6 +40,7 @@ A comprehensive Next.js-based product management system that handles complex pro
    ```
 
 3. **Start development server:**
+
    ```bash
    npm run dev
    # or
@@ -54,7 +57,9 @@ A comprehensive Next.js-based product management system that handles complex pro
 ### Core Concepts
 
 #### Products
+
 Products are the main entities in the system. Each product has:
+
 - **SKU**: Unique identifier
 - **Name**: Human-readable name
 - **Weight**: Physical weight in kg
@@ -62,13 +67,17 @@ Products are the main entities in the system. Each product has:
 - **Flags**: `isComposite` and `hasVariation` for behavior control
 
 #### Variations
+
 Products can have variations (e.g., different colors, sizes):
+
 - **Variation Types**: Define what can vary (Color, Size, Material)
 - **Variation Values**: Specific options (Red, Blue, Small, Large)
 - **Product Variations**: Combinations of values for a specific product
 
 #### Compositions
+
 Composite products are made from other products:
+
 - **Composition Items**: Define parent-child relationships with quantities
 - **Weight Calculation**: Automatic calculation based on components
 - **Hierarchy Support**: Multi-level compositions (products containing products)
@@ -132,6 +141,8 @@ npm run build:analyze  # Build with bundle analyzer
 npm run build:docker   # Build Docker image
 ```
 
+> The `test` and `build` scripts automatically set `VITE_CJS_IGNORE_WARNING=1` and `NEXT_CACHE_DISABLED=1` to ensure warning-free CI runs.
+
 ### Code Style
 
 The project uses strict TypeScript and follows these conventions:
@@ -191,11 +202,13 @@ The project uses optimized build settings in `next.config.js`:
 ### Docker Deployment
 
 1. **Build the Docker image:**
+
    ```bash
    docker build -t product-management-system .
    ```
 
 2. **Run the container:**
+
    ```bash
    docker run -p 3000:3000 product-management-system
    ```
@@ -208,6 +221,7 @@ The project uses optimized build settings in `next.config.js`:
 ### Production Build
 
 1. **Run the build script:**
+
    ```bash
    ./scripts/build.sh
    ```

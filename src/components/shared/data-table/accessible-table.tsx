@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import AutoSizer from "react-virtualized-auto-sizer";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import {
   Table,
@@ -34,6 +36,9 @@ export interface AccessibleTableProps<T> {
   caption?: string;
   className?: string;
   rowKey?: (row: T, index: number) => string | number;
+  virtualized?: boolean;
+  rowHeight?: number;
+  height?: number;
 }
 
 function getSortIcon(sortDirection: SortDirection) {
@@ -42,7 +47,9 @@ function getSortIcon(sortDirection: SortDirection) {
   return <ChevronsUpDown className="h-4 w-4" />;
 }
 
-function getSortAriaSort(sortDirection: SortDirection): "ascending" | "descending" | "none" {
+function getSortAriaSort(
+  sortDirection: SortDirection
+): "ascending" | "descending" | "none" {
   if (sortDirection === "asc") return "ascending";
   if (sortDirection === "desc") return "descending";
   return "none";
@@ -59,12 +66,15 @@ export function AccessibleTable<T>({
   caption,
   className,
   rowKey = (row, index) => index,
+  virtualized = false,
+  rowHeight = 48,
+  height = 400,
 }: AccessibleTableProps<T>) {
   const handleSort = (columnKey: keyof T) => {
     if (!onSort) return;
-    
+
     let newDirection: SortDirection = "asc";
-    
+
     if (sortBy === columnKey) {
       if (sortDirection === "asc") {
         newDirection = "desc";
@@ -72,7 +82,7 @@ export function AccessibleTable<T>({
         newDirection = null;
       }
     }
-    
+
     onSort(columnKey, newDirection);
   };
 
@@ -83,6 +93,91 @@ export function AccessibleTable<T>({
     }
   };
 
+  if (virtualized && !loading && data.length > 0) {
+    return (
+      <div className={cn("relative", className)}>
+        {caption && (
+          <div className="text-sm text-muted-foreground mb-4">{caption}</div>
+        )}
+        {/* Header */}
+        <div role="rowgroup" className="sticky top-0 z-10">
+          <div role="row" className="flex border-b bg-background">
+            {columns.map((column) => (
+              <div
+                role="columnheader"
+                key={String(column.key)}
+                className={cn("flex-1 p-2", column.className)}
+                aria-sort={
+                  sortBy === column.key
+                    ? getSortAriaSort(sortDirection || null)
+                    : "none"
+                }
+                tabIndex={column.sortable && onSort ? 0 : undefined}
+                onClick={
+                  column.sortable && onSort
+                    ? () => handleSort(column.key)
+                    : undefined
+                }
+                onKeyDown={
+                  column.sortable && onSort
+                    ? (e) => handleKeyDown(e, column.key)
+                    : undefined
+                }
+              >
+                <span className="flex items-center gap-2">
+                  {column.label}
+                  {column.sortable &&
+                    onSort &&
+                    getSortIcon(
+                      sortBy === column.key ? sortDirection || null : null
+                    )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Virtualized rows */}
+        <div role="rowgroup" style={{ height }} className="overflow-auto">
+          <AutoSizer>
+            {({ width, height }) => (
+              <List
+                height={height}
+                width={width}
+                itemCount={data.length}
+                itemSize={rowHeight}
+                overscanCount={5}
+              >
+                {({ index, style }: ListChildComponentProps) => {
+                  const row = data[index];
+                  return (
+                    <div
+                      role="row"
+                      style={style}
+                      className="flex border-b"
+                      key={rowKey(row, index)}
+                    >
+                      {columns.map((column) => (
+                        <div
+                          role="cell"
+                          key={String(column.key)}
+                          className={cn("flex-1 p-2", column.className)}
+                        >
+                          {column.render
+                            ? column.render(row[column.key], row)
+                            : String(row[column.key] ?? "")}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
+              </List>
+            )}
+          </AutoSizer>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("relative", className)}>
       <Table>
@@ -91,7 +186,7 @@ export function AccessibleTable<T>({
             {caption}
           </caption>
         )}
-        
+
         <TableHeader>
           <TableRow>
             {columns.map((column) => (
@@ -127,7 +222,7 @@ export function AccessibleTable<T>({
             ))}
           </TableRow>
         </TableHeader>
-        
+
         <TableBody>
           {loading ? (
             <TableRow>

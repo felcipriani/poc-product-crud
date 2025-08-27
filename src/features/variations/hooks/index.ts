@@ -1,0 +1,1 @@
+export { useVariations } from './use-variations';

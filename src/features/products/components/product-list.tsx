@@ -1,14 +1,28 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
-import { Search, Plus, Filter, Edit, Trash2, Package, Layers, Zap } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Search,
+  Plus,
+  Filter,
+  Edit,
+  Trash2,
+  Package,
+  Layers,
+  Zap,
+} from "lucide-react";
 import { Product } from "@/lib/domain/entities/product";
-import { AccessibleTable, Column, SortDirection } from "@/components/shared/data-table/accessible-table";
+import {
+  AccessibleTable,
+  Column,
+  SortDirection,
+} from "@/components/shared/data-table/accessible-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal } from "@/components/shared/modals/modal";
 import { cn } from "@/lib/utils/cn";
+import { useDebounce } from "@/lib/utils/use-debounce";
 
 export interface ProductListProps {
   products: Product[];
@@ -17,7 +31,10 @@ export interface ProductListProps {
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (sku: string) => Promise<void>;
   onSearch: (query: string) => void;
-  onFilterChange: (filters: { isComposite?: boolean; hasVariation?: boolean }) => void;
+  onFilterChange: (filters: {
+    isComposite?: boolean;
+    hasVariation?: boolean;
+  }) => void;
   searchQuery: string;
   filters: { isComposite?: boolean; hasVariation?: boolean };
 }
@@ -35,23 +52,35 @@ export function ProductList({
 }: ProductListProps) {
   const [sortBy, setSortBy] = useState<keyof Product>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; product?: Product }>({
+  const [deleteModal, setDeleteModal] = useState<{
+    open: boolean;
+    product?: Product;
+  }>({
     open: false,
   });
   const [deleting, setDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(searchQuery);
+  const debouncedSearch = useDebounce(searchTerm, 300);
 
-  const handleSort = (key: keyof Product, direction: SortDirection) => {
-    setSortBy(key);
-    setSortDirection(direction);
-  };
+  useEffect(() => {
+    onSearch(debouncedSearch);
+  }, [debouncedSearch, onSearch]);
 
-  const handleDeleteClick = (product: Product) => {
+  const handleSort = useCallback(
+    (key: keyof Product, direction: SortDirection) => {
+      setSortBy(key);
+      setSortDirection(direction);
+    },
+    []
+  );
+
+  const handleDeleteClick = useCallback((product: Product) => {
     setDeleteModal({ open: true, product });
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteModal.product) return;
-    
+
     try {
       setDeleting(true);
       await onDeleteProduct(deleteModal.product.sku);
@@ -61,30 +90,33 @@ export function ProductList({
     } finally {
       setDeleting(false);
     }
-  };
+  }, [deleteModal.product, onDeleteProduct]);
 
-  const handleFilterClick = (filterType: "composite" | "variation" | "all") => {
-    switch (filterType) {
-      case "composite":
-        onFilterChange({ 
-          isComposite: filters.isComposite ? undefined : true,
-          hasVariation: undefined 
-        });
-        break;
-      case "variation":
-        onFilterChange({ 
-          isComposite: undefined,
-          hasVariation: filters.hasVariation ? undefined : true 
-        });
-        break;
-      case "all":
-        onFilterChange({});
-        break;
-    }
-  };
+  const handleFilterClick = useCallback(
+    (filterType: "composite" | "variation" | "all") => {
+      switch (filterType) {
+        case "composite":
+          onFilterChange({
+            isComposite: filters.isComposite ? undefined : true,
+            hasVariation: undefined,
+          });
+          break;
+        case "variation":
+          onFilterChange({
+            isComposite: undefined,
+            hasVariation: filters.hasVariation ? undefined : true,
+          });
+          break;
+        case "all":
+          onFilterChange({});
+          break;
+      }
+    },
+    [filters, onFilterChange]
+  );
 
   // Sort products
-  const sortedProducts = React.useMemo(() => {
+  const sortedProducts = useMemo(() => {
     if (!sortDirection) return products;
 
     return [...products].sort((a, b) => {
@@ -92,7 +124,7 @@ export function ProductList({
       const bValue = b[sortBy];
 
       if (aValue === bValue) return 0;
-      
+
       let comparison = 0;
       if (typeof aValue === "string" && typeof bValue === "string") {
         comparison = aValue.localeCompare(bValue);
@@ -128,9 +160,7 @@ export function ProductList({
       render: (value, row) => {
         if (row.isComposite) {
           return (
-            <span className="text-muted-foreground italic">
-              Calculated
-            </span>
+            <span className="text-muted-foreground italic">Calculated</span>
           );
         }
         return value ? `${value} kg` : "—";
@@ -141,7 +171,11 @@ export function ProductList({
       label: "Dimensions (cm)",
       render: (value) => {
         if (!value) return "—";
-        const dimensions = value as { height: number; width: number; depth: number };
+        const dimensions = value as {
+          height: number;
+          width: number;
+          depth: number;
+        };
         return `${dimensions.height}×${dimensions.width}×${dimensions.depth}`;
       },
     },
@@ -225,12 +259,13 @@ export function ProductList({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products by SKU or name..."
-            value={searchQuery}
-            onChange={(e) => onSearch(e.target.value)}
+            aria-label="Search products"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Button
@@ -273,6 +308,7 @@ export function ProductList({
         emptyMessage="No products found. Create your first product to get started."
         caption="Product catalog with search and filtering capabilities"
         rowKey={(row) => row.sku}
+        virtualized
       />
 
       {/* Delete Confirmation Modal */}

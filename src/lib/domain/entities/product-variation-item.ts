@@ -8,6 +8,7 @@ export const ProductVariationItemSchema = z.object({
   name: z.string().optional(),
   weightOverride: z.number().positive().optional(),
   dimensionsOverride: DimensionsSchema.optional(),
+  sortOrder: z.number().int().nonnegative().default(0),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
@@ -20,6 +21,7 @@ export interface CreateProductVariationItemData {
   name?: string;
   weightOverride?: number;
   dimensionsOverride?: Dimensions;
+  sortOrder?: number;
 }
 
 export interface UpdateProductVariationItemData {
@@ -27,6 +29,7 @@ export interface UpdateProductVariationItemData {
   name?: string;
   weightOverride?: number;
   dimensionsOverride?: Dimensions;
+  sortOrder?: number;
 }
 
 export class ProductVariationItemEntity {
@@ -37,6 +40,7 @@ export class ProductVariationItemEntity {
     public readonly name: string | undefined,
     public readonly weightOverride: number | undefined,
     public readonly dimensionsOverride: Dimensions | undefined,
+    public readonly sortOrder: number,
     public readonly createdAt: Date,
     public readonly updatedAt: Date
   ) {
@@ -47,12 +51,16 @@ export class ProductVariationItemEntity {
       name,
       weightOverride,
       dimensionsOverride,
+      sortOrder,
       createdAt,
       updatedAt,
     });
   }
 
-  static create(id: string, data: CreateProductVariationItemData): ProductVariationItemEntity {
+  static create(
+    id: string,
+    data: CreateProductVariationItemData
+  ): ProductVariationItemEntity {
     const now = new Date();
     return new ProductVariationItemEntity(
       id,
@@ -61,6 +69,7 @@ export class ProductVariationItemEntity {
       data.name,
       data.weightOverride,
       data.dimensionsOverride,
+      data.sortOrder ?? 0,
       now,
       now
     );
@@ -74,6 +83,7 @@ export class ProductVariationItemEntity {
       data.name,
       data.weightOverride,
       data.dimensionsOverride,
+      data.sortOrder ?? 0,
       data.createdAt,
       data.updatedAt
     );
@@ -87,6 +97,7 @@ export class ProductVariationItemEntity {
       data.name ?? this.name,
       data.weightOverride ?? this.weightOverride,
       data.dimensionsOverride ?? this.dimensionsOverride,
+      data.sortOrder ?? this.sortOrder,
       this.createdAt,
       new Date()
     );
@@ -97,9 +108,10 @@ export class ProductVariationItemEntity {
    * Sorts variation type IDs to ensure consistent ordering
    */
   getSelectionHash(): string {
-    const sortedEntries = Object.entries(this.selections)
-      .sort(([a], [b]) => a.localeCompare(b));
-    
+    const sortedEntries = Object.entries(this.selections).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+
     return sortedEntries
       .map(([typeId, variationId]) => `${typeId}:${variationId}`)
       .join("|");
@@ -149,6 +161,7 @@ export class ProductVariationItemEntity {
       name: this.name,
       weightOverride: this.weightOverride,
       dimensionsOverride: this.dimensionsOverride,
+      sortOrder: this.sortOrder,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

@@ -62,10 +62,11 @@ export function useCompositeVariations(productSku: string) {
           return {
             id: variation.id,
             productSku,
-            name: `Variation ${index + 1}`, // Simple naming for now
+            name: variation.name || `Variation ${index + 1}`,
             compositionItems,
             totalWeight,
             isActive: true,
+            sortOrder: variation.sortOrder,
             createdAt: variation.createdAt,
             updatedAt: variation.updatedAt,
           };
@@ -88,19 +89,27 @@ export function useCompositeVariations(productSku: string) {
   ]);
 
   // Create new variation
+  const generateDefaultName = useCallback(() => {
+    let counter = 1;
+    const existing = new Set(variations.map((v) => v.name.toLowerCase()));
+    while (existing.has(`variation ${counter}`)) {
+      counter++;
+    }
+    return `Variation ${counter}`;
+  }, [variations]);
+
   const createVariation = useCallback(
     async (data: CreateCompositeVariationData) => {
       try {
         setError(null);
-
-        // Create underlying product variation
-        const productVariation = await variationRepository.create({
+        const name = generateDefaultName();
+        await variationRepository.create({
           productSku: data.productSku,
-          selections: {}, // Empty for composite variations
+          selections: {},
           weightOverride: undefined,
+          name,
+          sortOrder: variations.length,
         });
-
-        // Reload variations to get updated list
         await loadVariations();
       } catch (err) {
         setError(
@@ -109,7 +118,12 @@ export function useCompositeVariations(productSku: string) {
         throw err;
       }
     },
-    [variationRepository, loadVariations]
+    [
+      variationRepository,
+      loadVariations,
+      generateDefaultName,
+      variations.length,
+    ]
   );
 
   // Update variation
@@ -117,16 +131,17 @@ export function useCompositeVariations(productSku: string) {
     async (id: string, data: UpdateCompositeVariationData) => {
       try {
         setError(null);
-
-        // For now, we only support name updates through the underlying variation
-        // In a full implementation, we'd have a proper CompositeVariation repository
-
-        // Update local state optimistically
-        setVariations((prev) =>
-          prev.map((v) =>
-            v.id === id ? { ...v, ...data, updatedAt: new Date() } : v
-          )
-        );
+        if (data.name) {
+          const exists = variations.some(
+            (v) =>
+              v.id !== id && v.name.toLowerCase() === data.name.toLowerCase()
+          );
+          if (exists) {
+            throw new Error("Variation name must be unique");
+          }
+        }
+        await variationRepository.update(id, data);
+        await loadVariations();
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to update variation"
@@ -134,7 +149,7 @@ export function useCompositeVariations(productSku: string) {
         throw err;
       }
     },
-    []
+    [variationRepository, loadVariations, variations]
   );
 
   // Delete variation
@@ -142,6 +157,10 @@ export function useCompositeVariations(productSku: string) {
     async (id: string) => {
       try {
         setError(null);
+
+        if (variations.length <= 1) {
+          throw new Error("At least one variation is required");
+        }
 
         // Delete composition items first
         const variationSku = `${productSku}#${id}`;
@@ -164,7 +183,33 @@ export function useCompositeVariations(productSku: string) {
         throw err;
       }
     },
-    [productSku, variationRepository, compositionRepository, loadVariations]
+    [
+      productSku,
+      variationRepository,
+      compositionRepository,
+      loadVariations,
+      variations.length,
+    ]
+  );
+
+  const reorderVariations = useCallback(
+    async (ids: string[]) => {
+      try {
+        setError(null);
+        await Promise.all(
+          ids.map((id, index) =>
+            variationRepository.update(id, { sortOrder: index })
+          )
+        );
+        await loadVariations();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to reorder variations"
+        );
+        throw err;
+      }
+    },
+    [variationRepository, loadVariations]
   );
 
   // Add composition item to variation
@@ -251,6 +296,7 @@ export function useCompositeVariations(productSku: string) {
     createVariation,
     updateVariation,
     deleteVariation,
+    reorderVariations,
     addCompositionItem,
     updateCompositionItem,
     deleteCompositionItem,

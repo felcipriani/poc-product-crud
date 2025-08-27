@@ -1,12 +1,12 @@
-import { v4 as uuidv4 } from 'uuid';
-import { BaseRepository } from './base-repository';
-import { STORAGE_KEYS } from '../storage-service';
+import { v4 as uuidv4 } from "uuid";
+import { BaseRepository } from "./base-repository";
+import { STORAGE_KEYS } from "../storage-service";
 import {
   ProductVariationItem,
   ProductVariationItemSchema,
   CreateProductVariationItemData,
   UpdateProductVariationItemData,
-} from '../../domain/entities/product-variation-item';
+} from "../../domain/entities/product-variation-item";
 
 export class ProductVariationItemRepository extends BaseRepository<
   ProductVariationItem,
@@ -14,17 +14,20 @@ export class ProductVariationItemRepository extends BaseRepository<
   UpdateProductVariationItemData
 > {
   protected storageKey = STORAGE_KEYS.PRODUCT_VARIATIONS;
-  protected entityName = 'ProductVariationItem';
+  protected entityName = "ProductVariationItem";
 
   protected getId(entity: ProductVariationItem): string {
     return entity.id;
   }
 
-  protected createEntity(data: CreateProductVariationItemData): ProductVariationItem {
+  protected createEntity(
+    data: CreateProductVariationItemData
+  ): ProductVariationItem {
     const now = new Date();
     return {
       id: uuidv4(),
       ...data,
+      sortOrder: data.sortOrder ?? 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -37,6 +40,7 @@ export class ProductVariationItemRepository extends BaseRepository<
     return {
       ...existing,
       ...data,
+      sortOrder: data.sortOrder ?? existing.sortOrder,
       updatedAt: new Date(),
     };
   }
@@ -44,7 +48,9 @@ export class ProductVariationItemRepository extends BaseRepository<
   protected validateEntity(entity: ProductVariationItem): void {
     const result = ProductVariationItemSchema.safeParse(entity);
     if (!result.success) {
-      throw new Error(`Invalid product variation item data: ${result.error.message}`);
+      throw new Error(
+        `Invalid product variation item data: ${result.error.message}`
+      );
     }
   }
 
@@ -52,7 +58,10 @@ export class ProductVariationItemRepository extends BaseRepository<
    * Finds all variation items for a specific product
    */
   async findByProduct(productSku: string): Promise<ProductVariationItem[]> {
-    return this.findWhere((item) => item.productSku === productSku);
+    const items = await this.findWhere(
+      (item) => item.productSku === productSku
+    );
+    return items.sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   /**
@@ -71,15 +80,15 @@ export class ProductVariationItemRepository extends BaseRepository<
   ): Promise<ProductVariationItem | null> {
     return this.findFirst((item) => {
       if (item.productSku !== productSku) return false;
-      
+
       // Check if all selections match
       const itemSelectionKeys = Object.keys(item.selections);
       const searchSelectionKeys = Object.keys(selections);
-      
+
       if (itemSelectionKeys.length !== searchSelectionKeys.length) return false;
-      
-      return searchSelectionKeys.every(key => 
-        item.selections[key] === selections[key]
+
+      return searchSelectionKeys.every(
+        (key) => item.selections[key] === selections[key]
       );
     });
   }
@@ -104,7 +113,9 @@ export class ProductVariationItemRepository extends BaseRepository<
   /**
    * Finds items that use any variation from a specific variation type
    */
-  async findByVariationType(variationTypeId: string): Promise<ProductVariationItem[]> {
+  async findByVariationType(
+    variationTypeId: string
+  ): Promise<ProductVariationItem[]> {
     return this.findWhere((item) =>
       Object.keys(item.selections).includes(variationTypeId)
     );
@@ -118,21 +129,21 @@ export class ProductVariationItemRepository extends BaseRepository<
     variationsByType: Record<string, Array<{ id: string; name: string }>>
   ): AsyncGenerator<Record<string, string>> {
     if (variationTypeIds.length === 0) return;
-    
+
     // Generate cartesian product of all variations
     const generateCartesianProduct = (arrays: string[][]): string[][] => {
-      return arrays.reduce((acc, curr) => 
-        acc.flatMap(x => curr.map(y => [...x, y])), 
+      return arrays.reduce(
+        (acc, curr) => acc.flatMap((x) => curr.map((y) => [...x, y])),
         [[]] as string[][]
       );
     };
-    
-    const variationArrays = variationTypeIds.map(typeId => 
-      variationsByType[typeId]?.map(v => v.id) || []
+
+    const variationArrays = variationTypeIds.map(
+      (typeId) => variationsByType[typeId]?.map((v) => v.id) || []
     );
-    
+
     const combinations = generateCartesianProduct(variationArrays);
-    
+
     for (const combination of combinations) {
       const selections: Record<string, string> = {};
       variationTypeIds.forEach((typeId, index) => {
@@ -153,12 +164,14 @@ export class ProductVariationItemRepository extends BaseRepository<
       dimensionsOverride?: { height: number; width: number; depth: number };
     }
   ): Promise<ProductVariationItem[]> {
-    const items: CreateProductVariationItemData[] = combinations.map((selections) => ({
-      productSku,
-      selections,
-      weightOverride: defaultOverrides?.weightOverride,
-      dimensionsOverride: defaultOverrides?.dimensionsOverride,
-    }));
+    const items: CreateProductVariationItemData[] = combinations.map(
+      (selections) => ({
+        productSku,
+        selections,
+        weightOverride: defaultOverrides?.weightOverride,
+        dimensionsOverride: defaultOverrides?.dimensionsOverride,
+      })
+    );
 
     return this.createMany(items);
   }
@@ -166,11 +179,18 @@ export class ProductVariationItemRepository extends BaseRepository<
   /**
    * Validates business rules before creating a variation item
    */
-  async validateForCreation(data: CreateProductVariationItemData): Promise<void> {
+  async validateForCreation(
+    data: CreateProductVariationItemData
+  ): Promise<void> {
     // Check combination uniqueness
-    const existing = await this.findBySelections(data.productSku, data.selections);
+    const existing = await this.findBySelections(
+      data.productSku,
+      data.selections
+    );
     if (existing) {
-      throw new Error('A variation with this combination already exists for this product');
+      throw new Error(
+        "A variation with this combination already exists for this product"
+      );
     }
 
     // Additional validation would include:
@@ -193,9 +213,14 @@ export class ProductVariationItemRepository extends BaseRepository<
 
     // Check combination uniqueness if selections are being updated
     if (data.selections !== undefined) {
-      const existing = await this.findBySelections(existingItem.productSku, data.selections);
+      const existing = await this.findBySelections(
+        existingItem.productSku,
+        data.selections
+      );
       if (existing && existing.id !== id) {
-        throw new Error('A variation with this combination already exists for this product');
+        throw new Error(
+          "A variation with this combination already exists for this product"
+        );
       }
     }
   }
@@ -218,7 +243,7 @@ export class ProductVariationItemRepository extends BaseRepository<
   async deleteByProduct(productSku: string): Promise<void> {
     const items = await this.findByProduct(productSku);
     const itemIds = items.map((item) => item.id);
-    
+
     if (itemIds.length > 0) {
       await this.deleteMany(itemIds);
     }
@@ -230,7 +255,7 @@ export class ProductVariationItemRepository extends BaseRepository<
   async deleteByVariation(variationId: string): Promise<void> {
     const items = await this.findByVariation(variationId);
     const itemIds = items.map((item) => item.id);
-    
+
     if (itemIds.length > 0) {
       await this.deleteMany(itemIds);
     }
@@ -279,7 +304,9 @@ export class ProductVariationItemRepository extends BaseRepository<
   /**
    * Creates a variation item with validation
    */
-  async create(data: CreateProductVariationItemData): Promise<ProductVariationItem> {
+  async create(
+    data: CreateProductVariationItemData
+  ): Promise<ProductVariationItem> {
     await this.validateForCreation(data);
     return super.create(data);
   }

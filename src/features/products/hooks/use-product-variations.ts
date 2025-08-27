@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ProductVariationItem, CreateProductVariationItemData, UpdateProductVariationItemData } from "@/lib/domain/entities/product-variation-item";
+import {
+  ProductVariationItem,
+  CreateProductVariationItemData,
+  UpdateProductVariationItemData,
+} from "@/lib/domain/entities/product-variation-item";
 import { VariationType } from "@/lib/domain/entities/variation-type";
 import { Variation } from "@/lib/domain/entities/variation";
 import { ProductVariationItemRepository } from "@/lib/storage/repositories/product-variation-item-repository";
@@ -15,20 +19,31 @@ export interface UseProductVariationsReturn {
   loading: boolean;
   error: string | null;
   createVariation: (data: CreateProductVariationItemData) => Promise<void>;
-  updateVariation: (id: string, data: UpdateProductVariationItemData) => Promise<void>;
+  updateVariation: (
+    id: string,
+    data: UpdateProductVariationItemData
+  ) => Promise<void>;
   deleteVariation: (id: string) => Promise<void>;
+  reorderVariations: (ids: string[]) => Promise<void>;
   generateCombinations: (selectedTypeIds: string[]) => Promise<void>;
   refreshVariations: () => Promise<void>;
 }
 
-export function useProductVariations(productSku: string): UseProductVariationsReturn {
+export function useProductVariations(
+  productSku: string
+): UseProductVariationsReturn {
   const [variations, setVariations] = useState<ProductVariationItem[]>([]);
   const [variationTypes, setVariationTypes] = useState<VariationType[]>([]);
-  const [availableVariations, setAvailableVariations] = useState<Record<string, Variation[]>>({});
+  const [availableVariations, setAvailableVariations] = useState<
+    Record<string, Variation[]>
+  >({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const variationItemRepo = useMemo(() => new ProductVariationItemRepository(), []);
+  const variationItemRepo = useMemo(
+    () => new ProductVariationItemRepository(),
+    []
+  );
   const variationTypeRepo = useMemo(() => new VariationTypeRepository(), []);
   const variationRepo = useMemo(() => new VariationRepository(), []);
 
@@ -38,7 +53,8 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
       setError(null);
 
       // Load product variations
-      const productVariations = await variationItemRepo.findByProductSku(productSku);
+      const productVariations =
+        await variationItemRepo.findByProductSku(productSku);
       setVariations(productVariations);
 
       // Load variation types
@@ -53,7 +69,9 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
       }
       setAvailableVariations(variationsMap);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load variations");
+      setError(
+        err instanceof Error ? err.message : "Failed to load variations"
+      );
     } finally {
       setLoading(false);
     }
@@ -63,25 +81,53 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
     loadData();
   }, [loadData]);
 
+  const generateDefaultName = (baseName = "Variation") => {
+    let counter = 1;
+    const existingNames = new Set(variations.map((v) => v.name?.toLowerCase()));
+    while (existingNames.has(`${baseName.toLowerCase()} ${counter}`)) {
+      counter++;
+    }
+    return `${baseName} ${counter}`;
+  };
+
   const createVariation = async (data: CreateProductVariationItemData) => {
     try {
       setError(null);
-      await variationItemRepo.create(data);
+      const name =
+        data.name && data.name.trim().length > 0
+          ? data.name
+          : generateDefaultName();
+      const sortOrder = variations.length;
+      await variationItemRepo.create({ ...data, name, sortOrder });
       await loadData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create variation";
+      const message =
+        err instanceof Error ? err.message : "Failed to create variation";
       setError(message);
       throw new Error(message);
     }
   };
 
-  const updateVariation = async (id: string, data: UpdateProductVariationItemData) => {
+  const updateVariation = async (
+    id: string,
+    data: UpdateProductVariationItemData
+  ) => {
     try {
       setError(null);
+      if (data.name) {
+        const exists = variations.some(
+          (v) =>
+            v.id !== id && v.name?.toLowerCase() === data.name?.toLowerCase()
+        );
+        if (exists) {
+          throw new Error("Variation name must be unique");
+        }
+      }
       await variationItemRepo.update(id, data);
       await loadData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update variation";
+      const message =
+        err instanceof Error ? err.message : "Failed to update variation";
       setError(message);
       throw new Error(message);
     }
@@ -90,10 +136,31 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
   const deleteVariation = async (id: string) => {
     try {
       setError(null);
+      if (variations.length <= 1) {
+        throw new Error("At least one variation is required");
+      }
       await variationItemRepo.delete(id);
       await loadData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete variation";
+      const message =
+        err instanceof Error ? err.message : "Failed to delete variation";
+      setError(message);
+      throw new Error(message);
+    }
+  };
+
+  const reorderVariations = async (ids: string[]) => {
+    try {
+      setError(null);
+      await Promise.all(
+        ids.map((id, index) =>
+          variationItemRepo.update(id, { sortOrder: index })
+        )
+      );
+      await loadData();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to reorder variations";
       setError(message);
       throw new Error(message);
     }
@@ -105,9 +172,9 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
       setLoading(true);
 
       // Get variations for selected types
-      const typeVariations = selectedTypeIds.map(typeId => ({
+      const typeVariations = selectedTypeIds.map((typeId) => ({
         typeId,
-        variations: availableVariations[typeId] || []
+        variations: availableVariations[typeId] || [],
       }));
 
       // Generate cartesian product
@@ -121,12 +188,12 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
         });
 
         // Check if combination already exists
-        const existingVariation = variations.find(v => {
+        const existingVariation = variations.find((v) => {
           const existingHash = Object.entries(v.selections)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([typeId, variationId]) => `${typeId}:${variationId}`)
             .join("|");
-          
+
           const newHash = Object.entries(selections)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([typeId, variationId]) => `${typeId}:${variationId}`)
@@ -138,14 +205,15 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
         if (!existingVariation) {
           await variationItemRepo.create({
             productSku,
-            selections
+            selections,
           });
         }
       }
 
       await loadData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to generate combinations";
+      const message =
+        err instanceof Error ? err.message : "Failed to generate combinations";
       setError(message);
       throw new Error(message);
     } finally {
@@ -162,6 +230,7 @@ export function useProductVariations(productSku: string): UseProductVariationsRe
     createVariation,
     updateVariation,
     deleteVariation,
+    reorderVariations,
     generateCombinations,
     refreshVariations: loadData,
   };
@@ -173,22 +242,24 @@ function generateCartesianProduct(
 ): Array<Array<{ typeId: string; variationId: string }>> {
   if (typeVariations.length === 0) return [];
   if (typeVariations.length === 1) {
-    return typeVariations[0].variations.map(v => [{ 
-      typeId: typeVariations[0].typeId, 
-      variationId: v.id 
-    }]);
+    return typeVariations[0].variations.map((v) => [
+      {
+        typeId: typeVariations[0].typeId,
+        variationId: v.id,
+      },
+    ]);
   }
 
   const [first, ...rest] = typeVariations;
   const restCombinations = generateCartesianProduct(rest);
 
   const result: Array<Array<{ typeId: string; variationId: string }>> = [];
-  
+
   for (const variation of first.variations) {
     for (const restCombination of restCombinations) {
       result.push([
         { typeId: first.typeId, variationId: variation.id },
-        ...restCombination
+        ...restCombination,
       ]);
     }
   }

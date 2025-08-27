@@ -132,9 +132,9 @@ export function useCompositeVariations(productSku: string) {
       try {
         setError(null);
         if (data.name) {
+          const newName = data.name.toLowerCase();
           const exists = variations.some(
-            (v) =>
-              v.id !== id && v.name.toLowerCase() === data.name.toLowerCase()
+            (v) => v.id !== id && v.name.toLowerCase() === newName
           );
           if (exists) {
             throw new Error("Variation name must be unique");

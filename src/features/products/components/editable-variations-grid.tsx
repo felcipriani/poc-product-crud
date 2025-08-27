@@ -57,6 +57,7 @@ export function EditableVariationsGrid({
   onCreateVariation,
   onUpdateVariation,
   onDeleteVariation,
+  onReorderVariations,
   loading = false,
 }: EditableVariationsGridProps) {
   const [rows, setRows] = useState<GridRow[]>([]);

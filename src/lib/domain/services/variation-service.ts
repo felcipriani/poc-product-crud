@@ -1,14 +1,27 @@
-import { ProductVariationItem, CreateProductVariationItemData, UpdateProductVariationItemData } from '../entities/product-variation-item';
-import { CompositeVariation, CreateCompositeVariationData, UpdateCompositeVariationData } from '../entities/composite-variation';
-import { CompositionItem } from '../entities/composition-item';
-import { Product } from '../entities/product';
+import {
+  ProductVariationItem,
+  CreateProductVariationItemData,
+  UpdateProductVariationItemData,
+} from "../entities/product-variation-item";
+import {
+  CompositeVariation,
+  CreateCompositeVariationData,
+  UpdateCompositeVariationData,
+} from "../entities/composite-variation";
+import { CompositionItem } from "../entities/composition-item";
+import { Product } from "../entities/product";
 
 /**
  * Service for managing composite variations and traditional variations
  */
 export class VariationService {
   /**
-   * Validate variation creation
+   * Validate variation creation.
+   *
+   * @param data - New variation data submitted by the user.
+   * @param existingVariations - Variations already registered for the product.
+   * @param product - The product to which the variation belongs.
+   * @returns Object with validity flag and a list of errors.
    */
   static validateVariationCreation(
     data: CreateProductVariationItemData,
@@ -20,54 +33,60 @@ export class VariationService {
     // For composite products with variations, selections should be empty
     if (product.isComposite && product.hasVariation) {
       if (Object.keys(data.selections).length > 0) {
-        errors.push('Composite variations should not have traditional variation selections');
+        errors.push(
+          "Composite variations should not have traditional variation selections"
+        );
       }
     }
 
     // For traditional variations, check for duplicate combinations
     if (!product.isComposite && Object.keys(data.selections).length > 0) {
-      const duplicate = existingVariations.find(v => 
-        JSON.stringify(v.selections) === JSON.stringify(data.selections)
+      const duplicate = existingVariations.find(
+        (v) => JSON.stringify(v.selections) === JSON.stringify(data.selections)
       );
       if (duplicate) {
-        errors.push('This variation combination already exists');
+        errors.push("This variation combination already exists");
       }
     }
 
     // Validate weight override
     if (data.weightOverride !== undefined && data.weightOverride < 0) {
-      errors.push('Weight override must be non-negative');
+      errors.push("Weight override must be non-negative");
     }
 
     // Validate dimensions override
     if (data.dimensionsOverride) {
       const { height, width, depth } = data.dimensionsOverride;
       if (height !== undefined && height <= 0) {
-        errors.push('Height override must be positive');
+        errors.push("Height override must be positive");
       }
       if (width !== undefined && width <= 0) {
-        errors.push('Width override must be positive');
+        errors.push("Width override must be positive");
       }
       if (depth !== undefined && depth <= 0) {
-        errors.push('Depth override must be positive');
+        errors.push("Depth override must be positive");
       }
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   /**
-   * Generate automatic variation name for composite variations
+   * Generate automatic variation name for composite variations.
+   *
+   * @param existingVariations - Existing variations to base the numbering on.
+   * @param prefix - Optional prefix for the generated name.
+   * @returns Generated variation name that does not clash with existing ones.
    */
   static generateVariationName(
     existingVariations: ProductVariationItem[],
-    prefix: string = 'Variation'
+    prefix: string = "Variation"
   ): string {
     const existingNumbers = existingVariations
-      .map(v => {
+      .map((v) => {
         // Try to extract number from names like "Variation 1", "Variation 2" or IDs
         const nameOrId = v.name || v.id;
         const match = nameOrId.match(new RegExp(`^${prefix}[\\s-]?(\\d+)$`));
@@ -99,17 +118,23 @@ export class VariationService {
 
     // Products with variations must have at least one variation
     if (product.hasVariation && variations.length === 0) {
-      errors.push('Products with variations must have at least one variation');
+      errors.push("Products with variations must have at least one variation");
     }
 
     // Composite products with variations must have at least one variation
-    if (product.isComposite && product.hasVariation && variations.length === 0) {
-      errors.push('Composite products with variations must have at least one variation');
+    if (
+      product.isComposite &&
+      product.hasVariation &&
+      variations.length === 0
+    ) {
+      errors.push(
+        "Composite products with variations must have at least one variation"
+      );
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -130,14 +155,14 @@ export class VariationService {
     // For composite variations, calculate from composition items
     if (product.isComposite) {
       const variationSku = `${product.sku}#${variation.id}`;
-      const variationCompositionItems = compositionItems.filter(item => 
-        item.parentSku === variationSku
+      const variationCompositionItems = compositionItems.filter(
+        (item) => item.parentSku === variationSku
       );
 
       return variationCompositionItems.reduce((total, item) => {
-        const childProduct = childProducts.find(p => p.sku === item.childSku);
+        const childProduct = childProducts.find((p) => p.sku === item.childSku);
         const childWeight = childProduct?.weight || 0;
-        return total + (childWeight * item.quantity);
+        return total + childWeight * item.quantity;
       }, 0);
     }
 
@@ -155,11 +180,11 @@ export class VariationService {
     const errors: string[] = [];
 
     // Check that all variation IDs are present
-    const variationIds = new Set(variations.map(v => v.id));
+    const variationIds = new Set(variations.map((v) => v.id));
     const orderIds = new Set(newOrder);
 
     if (variationIds.size !== orderIds.size) {
-      errors.push('Order must include all variations');
+      errors.push("Order must include all variations");
     }
 
     for (const id of newOrder) {
@@ -176,7 +201,7 @@ export class VariationService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -190,8 +215,8 @@ export class VariationService {
     index: number
   ): CompositeVariation {
     const variationSku = `${product.sku}#${variation.id}`;
-    const variationCompositionItems = compositionItems.filter(item => 
-      item.parentSku === variationSku
+    const variationCompositionItems = compositionItems.filter(
+      (item) => item.parentSku === variationSku
     );
 
     const totalWeight = this.calculateVariationWeight(
@@ -208,7 +233,7 @@ export class VariationService {
       totalWeight,
       isActive: true,
       createdAt: variation.createdAt,
-      updatedAt: variation.updatedAt
+      updatedAt: variation.updatedAt,
     };
   }
 
@@ -223,10 +248,11 @@ export class VariationService {
     const errors: string[] = [];
 
     // Validate name uniqueness if provided
-    if ('name' in data && data.name) {
+    if ("name" in data && data.name) {
       const normalizedName = data.name.toLowerCase().trim();
-      const duplicate = existingVariations.find(v => 
-        v.name.toLowerCase().trim() === normalizedName && v.id !== excludeId
+      const duplicate = existingVariations.find(
+        (v) =>
+          v.name.toLowerCase().trim() === normalizedName && v.id !== excludeId
       );
       if (duplicate) {
         errors.push(`Variation name "${data.name}" is already in use`);
@@ -234,28 +260,30 @@ export class VariationService {
     }
 
     // Validate composition items if provided
-    if ('compositionItems' in data && data.compositionItems) {
+    if ("compositionItems" in data && data.compositionItems) {
       if (data.compositionItems.length === 0) {
-        errors.push('Variation must have at least one composition item');
+        errors.push("Variation must have at least one composition item");
       }
 
       // Check for duplicate child SKUs
-      const childSkus = data.compositionItems.map(item => item.childSku);
+      const childSkus = data.compositionItems.map((item) => item.childSku);
       const uniqueSkus = new Set(childSkus);
       if (childSkus.length !== uniqueSkus.size) {
-        errors.push('Duplicate products are not allowed in the same variation');
+        errors.push("Duplicate products are not allowed in the same variation");
       }
 
       // Validate quantities
-      const invalidQuantities = data.compositionItems.filter(item => item.quantity <= 0);
+      const invalidQuantities = data.compositionItems.filter(
+        (item) => item.quantity <= 0
+      );
       if (invalidQuantities.length > 0) {
-        errors.push('All quantities must be greater than zero');
+        errors.push("All quantities must be greater than zero");
       }
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

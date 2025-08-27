@@ -13,6 +13,7 @@
     "test": "VITE_CJS_IGNORE_WARNING=1 vitest",
     "test:watch": "VITE_CJS_IGNORE_WARNING=1 vitest --watch",
     "coverage": "VITE_CJS_IGNORE_WARNING=1 vitest --coverage",
+    "seed": "node scripts/seed.js",
     "prepare": "husky"
   },
   "dependencies": {

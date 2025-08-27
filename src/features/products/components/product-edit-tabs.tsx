@@ -8,6 +8,7 @@ import { ProductCompositionInterface } from "./product-composition-interface";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Layers, Settings } from "lucide-react";
 import { useCompositeVariations } from "../hooks/use-composite-variations";
+import { useComposition } from "../hooks/use-composition";
 
 export interface ProductEditTabsProps {
   product: Product;
@@ -25,12 +26,10 @@ export function ProductEditTabs({
   const [activeTab, setActiveTab] = React.useState("details");
   
   // Hook for composite variations (only used when product has both flags)
-  const {
-    compositeVariations,
-    availableCompositionItems,
-    createCompositionItem,
-    deleteCompositionItem,
-  } = useCompositeVariations(product.sku);
+  const compositeVariationsHook = useCompositeVariations(product.sku);
+  
+  // Hook for composition (for availableCompositionItems)
+  const compositionHook = useComposition(product.sku);
 
   return (
     <div className="space-y-6">
@@ -86,10 +85,6 @@ export function ProductEditTabs({
           {product.hasVariation ? (
             <ProductVariationsInterface 
               product={product}
-              compositionItems={compositeVariations.flatMap(cv => cv.compositionItems)}
-              availableCompositionItems={availableCompositionItems}
-              onCreateCompositionItem={createCompositionItem}
-              onDeleteCompositionItem={deleteCompositionItem}
             />
           ) : (
             <div className="text-center py-8">

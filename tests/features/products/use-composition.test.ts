@@ -85,7 +85,12 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue(mockItems);
       mockProductRepository.findBySku.mockResolvedValue(mockProduct);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(
+        productSku,
+        mockCompositionService as any,
+        mockProductRepository as any,
+        mockVariationItemRepository as any
+      ));
 
       expect(result.current.loading).toBe(true);
 
@@ -116,7 +121,7 @@ describe('useComposition', () => {
 
       mockCompositionService.getCompositionAvailableItems.mockResolvedValue(mockAvailableItems);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -130,13 +135,13 @@ describe('useComposition', () => {
       const expectedWeight = 15.5;
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(expectedWeight);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(mockCompositionService.calculateCompositeWeight).toHaveBeenCalledWith(productSku);
+      expect(mockCompositionService.calculateCompositeWeight).toHaveBeenCalledWith(productSku, {});
       expect(result.current.totalWeight).toBe(expectedWeight);
     });
   });
@@ -162,7 +167,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([mockItem]);
       mockProductRepository.findBySku.mockResolvedValue(mockProduct);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -196,7 +201,7 @@ describe('useComposition', () => {
       mockProductRepository.findBySku.mockResolvedValue(mockProduct);
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(8.5);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -238,7 +243,7 @@ describe('useComposition', () => {
       mockVariationItemRepository.findById.mockResolvedValue(mockVariation);
       mockVariationItemRepository.getEffectiveWeight.mockReturnValue(2.8);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -265,7 +270,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([mockItem]);
       mockProductRepository.findBySku.mockResolvedValue(null);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -291,7 +296,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([]);
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(7.5);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -313,7 +318,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([]);
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(12.5);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -333,7 +338,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([]);
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(0);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -354,7 +359,7 @@ describe('useComposition', () => {
       const errorMessage = 'Failed to load composition items';
       mockCompositionService.getCompositionItems.mockRejectedValue(new Error(errorMessage));
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -368,7 +373,7 @@ describe('useComposition', () => {
       const errorMessage = 'Failed to create composition item';
       mockCompositionService.createCompositionItem.mockRejectedValue(new Error(errorMessage));
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -384,14 +389,16 @@ describe('useComposition', () => {
         })
       ).rejects.toThrow(errorMessage);
 
-      expect(result.current.error).toBe(errorMessage);
+      await waitFor(() => {
+        expect(result.current.error).toBe(errorMessage);
+      });
     });
 
     it('should handle update errors', async () => {
       const errorMessage = 'Failed to update composition item';
       mockCompositionService.updateCompositionItem.mockRejectedValue(new Error(errorMessage));
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -403,14 +410,16 @@ describe('useComposition', () => {
         })
       ).rejects.toThrow(errorMessage);
 
-      expect(result.current.error).toBe(errorMessage);
+      await waitFor(() => {
+        expect(result.current.error).toBe(errorMessage);
+      });
     });
 
     it('should handle delete errors', async () => {
       const errorMessage = 'Failed to delete composition item';
       mockCompositionService.deleteCompositionItem.mockRejectedValue(new Error(errorMessage));
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -437,7 +446,7 @@ describe('useComposition', () => {
 
       mockCompositionService.validateCompositionComplexity.mockResolvedValue(mockValidation);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -468,7 +477,7 @@ describe('useComposition', () => {
 
       mockCompositionService.getCompositionTree.mockResolvedValue(mockTree);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -485,7 +494,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionAvailableItems.mockResolvedValue([]);
       mockCompositionService.calculateCompositeWeight.mockResolvedValue(0);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -520,7 +529,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([mockItem]);
       mockProductRepository.findBySku.mockResolvedValue(mockParentProduct);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -548,7 +557,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([mockItem]);
       mockProductRepository.findBySku.mockResolvedValue(mockParentProduct);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -576,7 +585,7 @@ describe('useComposition', () => {
       mockCompositionService.getCompositionItems.mockResolvedValue([mockItem]);
       mockProductRepository.findBySku.mockResolvedValue(mockParentProduct);
 
-      const { result } = renderHook(() => useComposition(productSku));
+      const { result } = renderHook(() => useComposition(productSku, mockCompositionService as any, mockProductRepository as any, mockVariationItemRepository as any));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);

@@ -236,9 +236,8 @@ describe('ProductCompositionInterface', () => {
       render(<ProductCompositionInterface product={compositeProduct} />);
       
       expect(screen.getByText('2.50')).toBeInTheDocument(); // Unit weight for Child Product 1
-      expect(screen.getByText('5.00')).toBeInTheDocument(); // Unit weight for Child Product 2
-      expect(screen.getByText('5.00')).toBeInTheDocument(); // Total weight for Child Product 1 (2.5 * 2)
-      expect(screen.getByText('5.00')).toBeInTheDocument(); // Total weight for Child Product 2 (5.0 * 1)
+      const fiveValues = screen.getAllByText('5.00');
+      expect(fiveValues).toHaveLength(3); // Unit weight for Child Product 2 + 2 total weights
     });
 
     it('should show product type badges', () => {

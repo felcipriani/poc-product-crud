@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CompositionService } from '@/lib/domain/services/composition-service';
-import { CompositionItemRepository } from '@/lib/storage/repositories/composition-item-repository';
 import { ProductRepository } from '@/lib/storage/repositories/product-repository';
 import { ProductVariationItemRepository } from '@/lib/storage/repositories/product-variation-item-repository';
 import { 
@@ -8,16 +7,6 @@ import {
   CreateCompositionItemData, 
   UpdateCompositionItemData 
 } from '@/lib/domain/entities/composition-item';
-
-// Initialize services
-const compositionItemRepository = new CompositionItemRepository();
-const productRepository = new ProductRepository();
-const variationItemRepository = new ProductVariationItemRepository();
-const compositionService = new CompositionService(
-  compositionItemRepository,
-  productRepository,
-  variationItemRepository
-);
 
 export interface CompositionItemWithDetails extends CompositionItem {
   displayName: string;
@@ -35,12 +24,39 @@ export interface AvailableCompositionItem {
   parentSku?: string;
 }
 
-export function useComposition(productSku: string) {
+export function useComposition(
+  productSku: string,
+  compositionService?: CompositionService,
+  productRepository?: ProductRepository,
+  variationItemRepository?: ProductVariationItemRepository
+) {
+  // Use provided services or create default instances
+  const service = compositionService || new CompositionService();
+  const prodRepo = productRepository || new ProductRepository();
+  const varRepo = variationItemRepository || new ProductVariationItemRepository();
+
   const [compositionItems, setCompositionItems] = useState<CompositionItemWithDetails[]>([]);
   const [availableItems, setAvailableItems] = useState<AvailableCompositionItem[]>([]);
   const [totalWeight, setTotalWeight] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get weight for a variation SKU
+  const getVariationWeight = useCallback(async (variationSku: string): Promise<number | undefined> => {
+    try {
+      const { productSku, variationId } = parseVariationSku(variationSku);
+      const product = await prodRepo.findBySku(productSku);
+      const variation = await varRepo.findById(variationId);
+
+      if (!product || !variation) {
+        return undefined;
+      }
+
+      return varRepo.getEffectiveWeight(variation, product.weight);
+    } catch {
+      return undefined;
+    }
+  }, [prodRepo, varRepo]);
 
   // Enhance composition item with display information
   const enhanceCompositionItem = useCallback(async (item: CompositionItem): Promise<CompositionItemWithDetails> => {
@@ -49,7 +65,7 @@ export function useComposition(productSku: string) {
       if (item.childSku.includes('#') || item.childSku.includes(':') || item.childSku.includes('-VAR-')) {
         // This is a variation
         const { productSku: parentSku } = parseVariationSku(item.childSku);
-        const parentProduct = await productRepository.findBySku(parentSku);
+        const parentProduct = await prodRepo.findBySku(parentSku);
         
         if (parentProduct) {
           const variationWeight = await getVariationWeight(item.childSku);
@@ -64,14 +80,14 @@ export function useComposition(productSku: string) {
       }
 
       // Regular product
-      const childProduct = await productRepository.findBySku(item.childSku);
+      const childProduct = await prodRepo.findBySku(item.childSku);
       if (childProduct) {
         let unitWeight = childProduct.weight;
         
         // If child is composite, calculate its weight
         if (childProduct.isComposite) {
           try {
-            unitWeight = await compositionService.calculateCompositeWeight(item.childSku);
+            unitWeight = await service.calculateCompositeWeight(item.childSku, {});
           } catch {
             // If calculation fails, use base weight or undefined
             unitWeight = childProduct.weight;
@@ -102,7 +118,7 @@ export function useComposition(productSku: string) {
         unitWeight: undefined,
       };
     }
-  }, []);
+  }, [getVariationWeight, prodRepo, service]);
 
   // Load composition items for the product
   const loadCompositionItems = useCallback(async () => {
@@ -110,7 +126,7 @@ export function useComposition(productSku: string) {
       setLoading(true);
       setError(null);
 
-      const items = await compositionService.getCompositionItems(productSku);
+      const items = await service.getCompositionItems(productSku);
       
       // Enhance items with display information
       const enhancedItems: CompositionItemWithDetails[] = [];
@@ -128,28 +144,28 @@ export function useComposition(productSku: string) {
     } finally {
       setLoading(false);
     }
-  }, [productSku]);
+  }, [productSku, enhanceCompositionItem, service]);
 
   // Load available items for composition
   const loadAvailableItems = useCallback(async () => {
     try {
-      const items = await compositionService.getCompositionAvailableItems();
+      const items = await service.getCompositionAvailableItems();
       setAvailableItems(items);
     } catch (err) {
       console.error('Error loading available composition items:', err);
     }
-  }, []);
+  }, [service]);
 
   // Calculate total weight
   const calculateTotalWeight = useCallback(async () => {
     try {
-      const weight = await compositionService.calculateCompositeWeight(productSku);
+      const weight = await service.calculateCompositeWeight(productSku, {});
       setTotalWeight(weight);
     } catch (err) {
       console.error('Error calculating total weight:', err);
       setTotalWeight(undefined);
     }
-  }, [productSku]);
+  }, [productSku, service]);
 
   // Parse variation SKU to extract product SKU and variation ID
   const parseVariationSku = (variationSku: string): { productSku: string; variationId: string } => {
@@ -174,36 +190,17 @@ export function useComposition(productSku: string) {
     throw new Error(`Invalid variation SKU format: '${variationSku}'`);
   };
 
-  // Get weight for a variation SKU
-  const getVariationWeight = async (variationSku: string): Promise<number | undefined> => {
-    try {
-      const { productSku, variationId } = parseVariationSku(variationSku);
-      const product = await productRepository.findBySku(productSku);
-      const variation = await variationItemRepository.findById(variationId);
-
-      if (!product || !variation) {
-        return undefined;
-      }
-
-      return variationItemRepository.getEffectiveWeight(variation, product.weight);
-    } catch {
-      return undefined;
-    }
-  };
-
   // Create composition item
   const createCompositionItem = useCallback(async (data: CreateCompositionItemData) => {
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      await compositionService.createCompositionItem(data);
+    try {
+      await service.createCompositionItem(data);
       
-      // Reload data
-      await Promise.all([
-        loadCompositionItems(),
-        calculateTotalWeight(),
-      ]);
+      // Reload data only on success - don't await to avoid clearing error state
+      loadCompositionItems();
+      calculateTotalWeight();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create composition item';
       setError(errorMessage);
@@ -211,17 +208,17 @@ export function useComposition(productSku: string) {
     } finally {
       setLoading(false);
     }
-  }, [loadCompositionItems, calculateTotalWeight]);
+  }, [loadCompositionItems, calculateTotalWeight, service]);
 
   // Update composition item
   const updateCompositionItem = useCallback(async (id: string, data: UpdateCompositionItemData) => {
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      await compositionService.updateCompositionItem(id, data);
+    try {
+      await service.updateCompositionItem(id, data);
       
-      // Reload data
+      // Reload data only on success
       await Promise.all([
         loadCompositionItems(),
         calculateTotalWeight(),
@@ -233,17 +230,17 @@ export function useComposition(productSku: string) {
     } finally {
       setLoading(false);
     }
-  }, [loadCompositionItems, calculateTotalWeight]);
+  }, [loadCompositionItems, calculateTotalWeight, service]);
 
   // Delete composition item
   const deleteCompositionItem = useCallback(async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      await compositionService.deleteCompositionItem(id);
+    try {
+      await service.deleteCompositionItem(id);
       
-      // Reload data
+      // Reload data only on success
       await Promise.all([
         loadCompositionItems(),
         calculateTotalWeight(),
@@ -255,7 +252,7 @@ export function useComposition(productSku: string) {
     } finally {
       setLoading(false);
     }
-  }, [loadCompositionItems, calculateTotalWeight]);
+  }, [loadCompositionItems, calculateTotalWeight, service]);
 
   // Refresh all composition data
   const refreshComposition = useCallback(async () => {
@@ -269,8 +266,7 @@ export function useComposition(productSku: string) {
   // Validate composition constraints
   const validateComposition = useCallback(async () => {
     try {
-      const validation = await compositionService.validateCompositionComplexity(productSku);
-      return validation;
+      return await service.validateCompositionComplexity(productSku);
     } catch (err) {
       console.error('Error validating composition:', err);
       return {
@@ -280,17 +276,17 @@ export function useComposition(productSku: string) {
         warnings: ['Failed to validate composition'],
       };
     }
-  }, [productSku]);
+  }, [productSku, service]);
 
   // Get composition tree for visualization
   const getCompositionTree = useCallback(async () => {
     try {
-      return await compositionService.getCompositionTree(productSku);
+      return await service.getCompositionTree(productSku);
     } catch (err) {
       console.error('Error getting composition tree:', err);
       return null;
     }
-  }, [productSku]);
+  }, [productSku, service]);
 
   // Load initial data
   useEffect(() => {

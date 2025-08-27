@@ -2,7 +2,7 @@
 
 A comprehensive Next.js-based product management system that handles complex product variations and compositions. Built with TypeScript, Tailwind CSS, and Shadcn UI components.
 
-## Features
+## 🌟 Features
 
 - **Product Management**: Create, edit, and manage products with SKU, name, dimensions, and weight
 - **Variation System**: Define variation types (color, material, size) and create product variations
@@ -10,56 +10,72 @@ A comprehensive Next.js-based product management system that handles complex pro
 - **Complex Business Rules**: Handle weight/dimension overrides, composition constraints, and validation
 - **Accessibility**: WCAG 2.1 AA compliant with keyboard navigation and screen reader support
 - **Testing**: Comprehensive test coverage ≥90% with unit, integration, and e2e tests
+- **Performance**: Optimized for large datasets with efficient caching and batch operations
+- **Security**: Built-in security headers, input validation, and XSS protection
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Node.js 22 or higher
-- npm or pnpm package manager
+### Prerequisites
 
-## Setup Instructions
+- Node.js 18 or higher
+- npm, yarn, or pnpm package manager
 
-1. **Clone and install dependencies:**
+### Installation
+
+1. **Clone the repository:**
    ```bash
    git clone <repository-url>
    cd product-management-system
-   npm install
    ```
 
-2. **Development server:**
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+
+3. **Start development server:**
    ```bash
    npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-3. **Build for production:**
-   ```bash
-   npm run build
-   npm start
+   # or
+   yarn dev
+   # or
+   pnpm dev
    ```
 
-## Available Scripts
+4. **Open your browser:**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-- `npm run test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run coverage` - Generate test coverage report (fails if <90%)
+## 📚 Documentation
 
-## Architecture
+### Core Concepts
 
-### Technology Stack
+#### Products
+Products are the main entities in the system. Each product has:
+- **SKU**: Unique identifier
+- **Name**: Human-readable name
+- **Weight**: Physical weight in kg
+- **Dimensions**: Height, width, depth in cm
+- **Flags**: `isComposite` and `hasVariation` for behavior control
 
-- **Framework**: Next.js 15+ with App Router
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS + Shadcn UI components
-- **Forms**: React Hook Form + Zod validation
-- **Testing**: Vitest + React Testing Library + MSW
-- **Code Quality**: ESLint + Prettier + Husky + lint-staged
+#### Variations
+Products can have variations (e.g., different colors, sizes):
+- **Variation Types**: Define what can vary (Color, Size, Material)
+- **Variation Values**: Specific options (Red, Blue, Small, Large)
+- **Product Variations**: Combinations of values for a specific product
 
-### Project Structure
+#### Compositions
+Composite products are made from other products:
+- **Composition Items**: Define parent-child relationships with quantities
+- **Weight Calculation**: Automatic calculation based on components
+- **Hierarchy Support**: Multi-level compositions (products containing products)
+
+### Architecture
+
+The system follows Clean Architecture principles:
 
 ```
 src/
@@ -73,162 +89,272 @@ src/
 │   ├── variations/             # Variation domain
 │   └── composition/            # Composition logic
 ├── lib/
-│   ├── domain/                 # Core domain entities
+│   ├── domain/                 # Core domain entities & services
 │   ├── storage/                # localStorage abstraction
 │   ├── utils/                  # Utility functions
 │   └── validations/            # Zod schemas
 └── tests/                      # Test utilities and factories
 ```
 
-### Architecture Principles
+### Technology Stack
 
-- **Clean Architecture**: Separation of UI, Application, Domain, and Infrastructure layers
-- **Domain-Driven Design**: Business logic isolated in domain layer
-- **Repository Pattern**: Data access abstraction with localStorage
-- **Feature-Based Organization**: Code organized by business features
-- **Test-Driven Development**: Comprehensive testing at all layers
+- **Framework**: Next.js 15+ with App Router
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS + Shadcn UI components
+- **Forms**: React Hook Form + Zod validation
+- **Testing**: Vitest + React Testing Library + MSW
+- **Code Quality**: ESLint + Prettier + Husky + lint-staged
 
-## Data Model
+## 🛠️ Development
 
-### Core Entities
+### Available Scripts
 
-- **Product**: SKU, name, dimensions, weight, composition/variation flags
-- **VariationType**: Name, weight/dimension modification flags
-- **Variation**: Name, linked to variation type
-- **ProductVariationItem**: Product variation combinations with overrides
-- **CompositionItem**: Parent-child product relationships with quantities
+```bash
+# Development
+npm run dev              # Start development server
+npm run build           # Build for production
+npm start              # Start production server
 
-### Storage Strategy
+# Code Quality
+npm run lint           # Run ESLint
+npm run lint:fix       # Fix ESLint issues
+npm run format         # Format code with Prettier
+npm run type-check     # Run TypeScript type checking
 
-- **localStorage**: All data persisted locally (no backend required)
-- **Schema Versioning**: Migration system for data evolution
-- **Repository Pattern**: Abstracted data access with mocking support
-- **Referential Integrity**: Validation of entity relationships
+# Testing
+npm run test           # Run tests
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Generate test coverage report
+npm run test:e2e       # Run end-to-end tests
 
-## Business Rules
+# Build & Deploy
+npm run build:analyze  # Build with bundle analyzer
+npm run build:docker   # Build Docker image
+```
 
-### Product Variations
+### Code Style
 
-1. Products with `hasVariation=true` must have at least one variation combination
-2. Variation types with `modifiesWeight=true` override base product weight
-3. Variation types with `modifiesDimensions=true` override base product dimensions
-4. Variation combinations must be unique (no duplicate selections)
+The project uses strict TypeScript and follows these conventions:
 
-### Product Composition
+- **Components**: PascalCase with descriptive names
+- **Files**: kebab-case for files, PascalCase for components
+- **Functions**: camelCase with verb-noun pattern
+- **Constants**: UPPER_SNAKE_CASE
+- **Types/Interfaces**: PascalCase with descriptive names
 
-1. Products with `isComposite=true` must have at least one composition item
-2. Composite product weight = sum of component weights (considering variations)
-3. Variable products (with variations) cannot be used directly in compositions
-4. Only specific variation combinations can be used in compositions
+### Testing Strategy
 
-### Advanced Rules
-
-1. Products can be both composite AND variable (complex composition interface)
-2. Case-insensitive uniqueness for names (products, variation types, variations)
-3. Referential integrity enforcement (cannot delete referenced entities)
-4. Automatic weight calculation with override precedence
-
-## Testing Strategy
-
-### Coverage Requirements
-
-- **Statements**: ≥90%
-- **Lines**: ≥90%
-- **Branches**: ≥90%
-- **Functions**: ≥90%
-
-### Test Types
+The project maintains ≥90% test coverage across:
 
 1. **Unit Tests (70%)**: Domain logic, utilities, validation
 2. **Integration Tests (20%)**: Component integration, data flow
 3. **End-to-End Tests (10%)**: Critical user journeys
 
-### Running Tests
+### Performance Guidelines
+
+- **Bundle Size**: Keep JavaScript bundles under 1MB
+- **Lighthouse Score**: Maintain 90+ performance score
+- **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Accessibility**: WCAG 2.1 AA compliance
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env.local` file for local development:
 
 ```bash
-# Run all tests
-npm run test
+# Application
+NEXT_PUBLIC_APP_NAME="Product Management System"
+NEXT_PUBLIC_APP_VERSION="1.0.0"
 
-# Run tests in watch mode
-npm run test:watch
+# Development
+NODE_ENV=development
+NEXT_TELEMETRY_DISABLED=1
 
-# Generate coverage report
-npm run coverage
+# Optional: Analytics
+NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id
 ```
 
-## Accessibility Features
+### Build Configuration
 
-- **Keyboard Navigation**: Full keyboard support with proper tab order
+The project uses optimized build settings in `next.config.js`:
+
+- **SWC Minification**: Faster builds and smaller bundles
+- **Image Optimization**: WebP/AVIF support with caching
+- **Bundle Splitting**: Optimized chunk splitting for better caching
+- **Security Headers**: XSS protection, CSRF prevention
+- **Performance**: Compression, font optimization
+
+## 🚀 Deployment
+
+### Docker Deployment
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t product-management-system .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:3000 product-management-system
+   ```
+
+3. **Using Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+### Production Build
+
+1. **Run the build script:**
+   ```bash
+   ./scripts/build.sh
+   ```
+
+2. **Deploy the `.next` folder** to your hosting platform
+
+### Hosting Platforms
+
+The application is compatible with:
+
+- **Vercel**: Zero-config deployment
+- **Netlify**: Static site generation
+- **AWS**: EC2, ECS, or Lambda
+- **Google Cloud**: Cloud Run or App Engine
+- **Azure**: App Service or Container Instances
+
+## 🔒 Security
+
+### Security Features
+
+- **Input Validation**: Zod schemas for all user inputs
+- **XSS Protection**: Sanitized outputs and CSP headers
+- **CSRF Protection**: Built-in Next.js protection
+- **Security Headers**: Comprehensive security header configuration
+- **Dependency Scanning**: Regular security audits
+
+### Security Best Practices
+
+1. **Keep dependencies updated**: Regular `npm audit` checks
+2. **Validate all inputs**: Use Zod schemas consistently
+3. **Sanitize outputs**: Prevent XSS attacks
+4. **Use HTTPS**: Always use secure connections in production
+5. **Monitor logs**: Track security events and errors
+
+## ♿ Accessibility
+
+### WCAG 2.1 AA Compliance
+
+The application meets WCAG 2.1 AA standards:
+
+- **Keyboard Navigation**: Full keyboard support
 - **Screen Reader Support**: ARIA labels and semantic HTML
-- **High Contrast**: Accessible color schemes and visual indicators
-- **Focus Management**: Clear focus indicators and logical flow
+- **Color Contrast**: Minimum 4.5:1 contrast ratio
+- **Focus Management**: Clear focus indicators
+- **Alternative Text**: Images and icons have alt text
 
-## Performance Optimizations
-
-- **Memoization**: Cached calculations for weight and combinations
-- **Lazy Loading**: On-demand data loading and component rendering
-- **Virtual Scrolling**: Efficient rendering of large data sets
-- **Debounced Inputs**: Optimized search and form interactions
-
-## Development Guidelines
-
-### Code Style
-
-- **TypeScript**: Strict mode with comprehensive typing
-- **ESLint**: Consistent code style and best practices
-- **Prettier**: Automated code formatting
-- **Husky**: Pre-commit hooks for quality assurance
-
-### Adding New Components
-
-1. Use Shadcn UI components as building blocks
-2. Follow accessibility guidelines (ARIA labels, keyboard support)
-3. Write comprehensive tests for new functionality
-4. Document complex business logic and edge cases
-
-### Adding Shadcn Components
+### Accessibility Testing
 
 ```bash
-# Install new Shadcn components
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add input
-npx shadcn-ui@latest add table
+# Run accessibility tests
+npm run test:a11y
+
+# Manual testing tools
+# - axe DevTools browser extension
+# - WAVE Web Accessibility Evaluator
+# - Lighthouse accessibility audit
 ```
 
-## Limitations and Future Work
+## 📊 Performance
 
-### Current Limitations
+### Performance Metrics
 
-- **localStorage Only**: No server-side persistence or synchronization
-- **Single User**: No multi-user support or collaboration features
-- **Basic Search**: Simple text-based search without advanced filtering
-- **No Import/Export**: Manual data entry only
+The application is optimized for:
 
-### Future Enhancements
+- **First Contentful Paint**: < 1.5s
+- **Largest Contentful Paint**: < 2.5s
+- **First Input Delay**: < 100ms
+- **Cumulative Layout Shift**: < 0.1
 
-- **Backend Integration**: REST API or GraphQL backend
-- **Advanced Search**: Faceted search with filters and sorting
-- **Bulk Operations**: Import/export functionality for products
-- **User Management**: Multi-user support with permissions
-- **Audit Trail**: Change tracking and history
-- **Performance**: Database optimization and caching strategies
+### Performance Monitoring
 
-## Troubleshooting
+```bash
+# Analyze bundle size
+npm run build:analyze
+
+# Run Lighthouse audit
+npx lighthouse http://localhost:3000
+
+# Performance testing
+npm run test:performance
+```
+
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Build Failures**: Ensure Node.js 22+ and clean `node_modules`
-2. **Test Failures**: Check coverage thresholds and mock configurations
-3. **localStorage Issues**: Clear browser storage if data corruption occurs
-4. **Type Errors**: Verify TypeScript configuration and strict mode compliance
+1. **Build Failures**
+   - Ensure Node.js 18+ is installed
+   - Clear `node_modules` and reinstall dependencies
+   - Check TypeScript errors with `npm run type-check`
+
+2. **Test Failures**
+   - Verify test coverage meets 90% threshold
+   - Check mock configurations in test setup
+   - Review failing test output for specific issues
+
+3. **Performance Issues**
+   - Use React DevTools Profiler
+   - Check bundle size with analyzer
+   - Review network requests in DevTools
+
+4. **Accessibility Issues**
+   - Run axe-core accessibility tests
+   - Test with keyboard navigation
+   - Verify screen reader compatibility
 
 ### Getting Help
 
-- Check the test files for usage examples
-- Review the domain models in `src/lib/domain/`
-- Examine the repository implementations for data patterns
-- Look at component tests for UI interaction patterns
+1. **Check the documentation** in the `/docs` folder
+2. **Review test files** for usage examples
+3. **Examine domain models** in `src/lib/domain/`
+4. **Look at component tests** for UI patterns
 
-## License
+## 🤝 Contributing
+
+### Development Workflow
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** following the code style guidelines
+4. **Add tests** for new functionality
+5. **Run the test suite**: `npm run test`
+6. **Commit your changes**: `git commit -m 'Add amazing feature'`
+7. **Push to the branch**: `git push origin feature/amazing-feature`
+8. **Open a Pull Request**
+
+### Code Review Process
+
+- All changes require code review
+- Tests must pass and coverage must be ≥90%
+- Code must follow ESLint and Prettier rules
+- Accessibility requirements must be met
+- Performance impact should be considered
+
+## 📄 License
 
 This project is a proof-of-concept for educational and demonstration purposes.
+
+## 🙏 Acknowledgments
+
+- **Next.js Team** for the amazing framework
+- **Shadcn** for the beautiful UI components
+- **Tailwind CSS** for the utility-first CSS framework
+- **React Hook Form** for form management
+- **Zod** for schema validation
+- **Vitest** for fast and reliable testing
+
+---
+
+**Built with ❤️ using Next.js, TypeScript, and modern web technologies.**

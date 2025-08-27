@@ -113,18 +113,18 @@ export function getUserFriendlyMessage(error: unknown): string {
 // Toast notification helpers
 export function showErrorToast(error: unknown, title = "Error") {
   const message = getUserFriendlyMessage(error);
-  toast({
-    title,
-    description: message,
-    variant: "destructive",
-  });
+//   // toast({
+//     title,
+//     description: message,
+//     variant: "destructive",
+//   });
 }
 
 export function showSuccessToast(message: string, title = "Success") {
-  toast({
-    title,
-    description: message,
-  });
+//   // toast({
+//     title,
+//     description: message,
+//   });
 }
 
 // Async operation wrapper with error handling

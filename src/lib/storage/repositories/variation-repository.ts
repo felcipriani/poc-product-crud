@@ -53,6 +53,13 @@ export class VariationRepository extends BaseRepository<
   }
 
   /**
+   * Alias for findByVariationType for compatibility
+   */
+  async findByType(variationTypeId: string): Promise<Variation[]> {
+    return this.findByVariationType(variationTypeId);
+  }
+
+  /**
    * Finds a variation by name within a specific variation type (case-insensitive)
    */
   async findByNameInType(name: string, variationTypeId: string): Promise<Variation | null> {

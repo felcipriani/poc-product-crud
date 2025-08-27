@@ -1,7 +1,7 @@
 // Service exports
 export { ProductService } from './product-service';
 export { VariationService } from './variation-service';
-export { CompositionService, type CompositionTree } from './composition-service';
+export { CompositionService, type CompositionTreeNode } from './composition-service';
 
 // Import types for the factory
 import { ProductService } from './product-service';
@@ -29,11 +29,7 @@ export class ServiceFactory {
       CompositionItemRepository 
     } = require('../../storage/repositories');
     
-    return new ProductService(
-      new ProductRepository(),
-      new ProductVariationItemRepository(),
-      new CompositionItemRepository()
-    );
+    return ProductService;
   }
 
   createVariationService(): VariationService {
@@ -43,11 +39,7 @@ export class ServiceFactory {
       ProductVariationItemRepository 
     } = require('../../storage/repositories');
     
-    return new VariationService(
-      new VariationTypeRepository(),
-      new VariationRepository(),
-      new ProductVariationItemRepository()
-    );
+    return VariationService;
   }
 
   createCompositionService(): CompositionService {
@@ -57,10 +49,6 @@ export class ServiceFactory {
       ProductVariationItemRepository 
     } = require('../../storage/repositories');
     
-    return new CompositionService(
-      new CompositionItemRepository(),
-      new ProductRepository(),
-      new ProductVariationItemRepository()
-    );
+    return CompositionService;
   }
 }

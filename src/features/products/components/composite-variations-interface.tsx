@@ -68,19 +68,11 @@ export function CompositeVariationsInterface({
   const [templates, setTemplates] = useState<CompositionTemplate[]>([]);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
-  // Memoize selected types to prevent recreation on every render
-  const selectedTypes = useMemo(() => 
-    variationTypes.filter(type => selectedTypeIds.includes(type.id)),
-    [variationTypes, selectedTypeIds]
-  );
+  // For composite products, we don't use traditional variation types
+  // Instead, each variation is defined by its unique composition
+  const isCompositeVariationMode = product.isComposite && product.hasVariation;
 
-  // Memoize weight modifying type
-  const weightModifyingType = useMemo(() => 
-    selectedTypes.find(type => type.modifiesWeight),
-    [selectedTypes]
-  );
-
-  // Memoize the generateVariationDisplayName function
+  // Helper function to generate variation display names
   const generateVariationDisplayName = useCallback((
     variation: ProductVariationItem,
     types: VariationType[],
@@ -103,71 +95,120 @@ export function CompositeVariationsInterface({
 
   // Build composition templates from existing variations and composition items
   useEffect(() => {
-    const newTemplates: CompositionTemplate[] = variations.map(variation => {
-      // Get composition items for this variation
-      const variationSku = `${product.sku}#${variation.id}`;
-      const variationCompositionItems = compositionItems.filter(item => 
-        item.parentSku === variationSku
-      );
+    if (!isCompositeVariationMode) {
+      // Traditional composite + variation mode (with variation types)
+      const selectedTypes = variationTypes.filter(type => selectedTypeIds.includes(type.id));
+      const weightModifyingType = selectedTypes.find(type => type.modifiesWeight);
 
-      // Build display name for this variation
-      const displayName = generateVariationDisplayName(variation, selectedTypes, availableVariations);
+      const newTemplates: CompositionTemplate[] = variations.map(variation => {
+        const variationSku = `${product.sku}#${variation.id}`;
+        const variationCompositionItems = compositionItems.filter(item => 
+          item.parentSku === variationSku
+        );
 
-      // Calculate total weight
-      let totalWeight = 0;
-      if (weightModifyingType && variation.weightOverride) {
-        // If parent variation type modifies weight, use override
-        totalWeight = variation.weightOverride;
-      } else {
-        // Calculate from composition items
-        totalWeight = variationCompositionItems.reduce((sum, item) => {
+        const displayName = generateVariationDisplayName(variation, selectedTypes, availableVariations);
+
+        let totalWeight = 0;
+        if (weightModifyingType && variation.weightOverride) {
+          totalWeight = variation.weightOverride;
+        } else {
+          totalWeight = variationCompositionItems.reduce((sum, item) => {
+            const availableItem = availableCompositionItems.find(ai => ai.sku === item.childSku);
+            return sum + ((availableItem?.weight || 0) * item.quantity);
+          }, 0);
+        }
+
+        return {
+          variationId: variation.id,
+          variationDisplayName: displayName,
+          items: variationCompositionItems.map(item => {
+            const availableItem = availableCompositionItems.find(ai => ai.sku === item.childSku);
+            return {
+              id: item.id,
+              childSku: item.childSku,
+              displayName: availableItem?.displayName || item.childSku,
+              quantity: item.quantity,
+              weight: availableItem?.weight,
+              isEditing: false,
+              isNew: false,
+            };
+          }),
+          totalWeight,
+        };
+      });
+
+      setTemplates(newTemplates);
+    } else {
+      // Pure composite variation mode (no variation types)
+      const newTemplates: CompositionTemplate[] = variations.map((variation, index) => {
+        const variationSku = `${product.sku}#${variation.id}`;
+        const variationCompositionItems = compositionItems.filter(item => 
+          item.parentSku === variationSku
+        );
+
+        // For composite variations, use a simple naming scheme
+        const displayName = `Variation ${index + 1}`;
+
+        const totalWeight = variationCompositionItems.reduce((sum, item) => {
           const availableItem = availableCompositionItems.find(ai => ai.sku === item.childSku);
           return sum + ((availableItem?.weight || 0) * item.quantity);
         }, 0);
-      }
 
-      return {
-        variationId: variation.id,
-        variationDisplayName: displayName,
-        items: variationCompositionItems.map(item => {
-          const availableItem = availableCompositionItems.find(ai => ai.sku === item.childSku);
-          return {
-            id: item.id,
-            childSku: item.childSku,
-            displayName: availableItem?.displayName || item.childSku,
-            quantity: item.quantity,
-            weight: availableItem?.weight,
-            isEditing: false,
-            isNew: false,
-          };
-        }),
-        totalWeight,
-      };
-    });
+        return {
+          variationId: variation.id,
+          variationDisplayName: displayName,
+          items: variationCompositionItems.map(item => {
+            const availableItem = availableCompositionItems.find(ai => ai.sku === item.childSku);
+            return {
+              id: item.id,
+              childSku: item.childSku,
+              displayName: availableItem?.displayName || item.childSku,
+              quantity: item.quantity,
+              weight: availableItem?.weight,
+              isEditing: false,
+              isNew: false,
+            };
+          }),
+          totalWeight,
+        };
+      });
 
-    setTemplates(newTemplates);
+      setTemplates(newTemplates);
+    }
   }, [
     variations, 
     compositionItems, 
     availableCompositionItems, 
-    selectedTypes, 
+    variationTypes,
+    selectedTypeIds,
     availableVariations, 
-    weightModifyingType, 
     product.sku,
+    isCompositeVariationMode,
     generateVariationDisplayName
   ]);
 
   const addNewVariationCombination = useCallback(() => {
-    // This will trigger the parent to show a modal or form for creating a new variation
-    // For now, we'll create a basic combination that needs to be filled
-    const newVariationData: CreateProductVariationItemData = {
-      productSku: product.sku,
-      selections: {},
-      weightOverride: weightModifyingType ? 0 : undefined,
-    };
-
-    onCreateVariation(newVariationData);
-  }, [product.sku, weightModifyingType, onCreateVariation]);
+    if (isCompositeVariationMode) {
+      // For pure composite variations, create a simple variation without traditional types
+      const newVariationData: CreateProductVariationItemData = {
+        productSku: product.sku,
+        selections: {}, // Empty selections for composite variations
+        weightOverride: undefined, // Weight will be calculated from composition
+      };
+      onCreateVariation(newVariationData);
+    } else {
+      // Traditional composite + variation mode
+      const selectedTypes = variationTypes.filter(type => selectedTypeIds.includes(type.id));
+      const weightModifyingType = selectedTypes.find(type => type.modifiesWeight);
+      
+      const newVariationData: CreateProductVariationItemData = {
+        productSku: product.sku,
+        selections: {},
+        weightOverride: weightModifyingType ? 0 : undefined,
+      };
+      onCreateVariation(newVariationData);
+    }
+  }, [product.sku, isCompositeVariationMode, variationTypes, selectedTypeIds, onCreateVariation]);
 
   const addCompositionItemToTemplate = useCallback((templateId: string) => {
     setTemplates(prev => prev.map(template => {
@@ -294,7 +335,8 @@ export function CompositeVariationsInterface({
     }
   }, [templates, onDeleteCompositionItem]);
 
-  if (selectedTypeIds.length === 0) {
+  // Show different interfaces based on whether we're using traditional variation types or pure composite variations
+  if (!isCompositeVariationMode && selectedTypeIds.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="text-muted-foreground">
@@ -309,9 +351,14 @@ export function CompositeVariationsInterface({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Composite Variations</h3>
+          <h3 className="text-lg font-medium">
+            {isCompositeVariationMode ? "Composition-Based Variations" : "Composite Variations"}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Each variation combination has its own composition template
+            {isCompositeVariationMode 
+              ? "Create variations by defining different composition combinations"
+              : "Each variation combination has its own composition template"
+            }
           </p>
         </div>
         <Button
@@ -329,12 +376,25 @@ export function CompositeVariationsInterface({
         <div className="text-sm text-blue-800">
           <div className="flex items-center gap-2 mb-2">
             <Package className="h-4 w-4" />
-            <strong>Composite + Variations Mode:</strong>
+            <strong>
+              {isCompositeVariationMode ? "Pure Composite Variations:" : "Composite + Variations Mode:"}
+            </strong>
           </div>
           <div className="text-xs space-y-1">
-            <div>• Each variation combination gets its own composition template</div>
-            <div>• Specify exact child products/variations for each combination</div>
-            <div>• Weight is calculated from selected child items (unless overridden)</div>
+            {isCompositeVariationMode ? (
+              <>
+                <div>• Each variation is defined by its unique composition</div>
+                <div>• No traditional variation types are used</div>
+                <div>• Create different &ldquo;versions&rdquo; by varying the composition items</div>
+                <div>• Example: &ldquo;Kit Basic&rdquo; vs &ldquo;Kit Premium&rdquo; with different components</div>
+              </>
+            ) : (
+              <>
+                <div>• Each variation combination gets its own composition template</div>
+                <div>• Specify exact child products/variations for each combination</div>
+                <div>• Weight is calculated from selected child items (unless overridden)</div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -441,6 +501,7 @@ export function CompositeVariationsInterface({
                                 size="sm"
                                 onClick={() => saveCompositionItem(template.variationId, item.id)}
                                 disabled={loading}
+                                aria-label="Save"
                               >
                                 <Save className="h-4 w-4" />
                               </Button>

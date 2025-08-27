@@ -143,7 +143,7 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
       sortable: true,
       render: (_, item) => (
         <div className="text-center">
-          {item.unitWeight !== undefined ? item.unitWeight.toFixed(3) : "—"}
+          {item.unitWeight !== undefined ? item.unitWeight.toFixed(2) : "—"}
         </div>
       ),
     },
@@ -154,7 +154,7 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
       render: (_, item) => (
         <div className="text-center font-medium">
           {item.unitWeight !== undefined 
-            ? (item.unitWeight * item.quantity).toFixed(3) 
+            ? (item.unitWeight * item.quantity).toFixed(2) 
             : "—"
           }
         </div>

@@ -100,7 +100,7 @@ describe("AccessibleTable", () => {
       {
         key: "price" as const,
         label: "Price",
-        render: (value: number) => `$${value}`,
+        render: (value: string | number, row: { id: number; name: string; price: number }) => `$${value}`,
       },
     ];
 

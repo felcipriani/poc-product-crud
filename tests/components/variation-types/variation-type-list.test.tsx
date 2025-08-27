@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { VariationTypeList } from "@/features/variation-types/components/variation-type-list";
+import { useVariationTypes } from "@/features/variation-types/hooks/use-variation-types";
 
 // Mock the hooks
 vi.mock("@/features/variation-types/hooks/use-variation-types", () => ({
@@ -32,9 +33,6 @@ vi.mock("@/features/variation-types/hooks/use-variation-types", () => ({
     refreshVariationTypes: vi.fn(),
   })),
 }));
-
-import { useVariationTypes } from "@/features/variation-types/hooks/use-variation-types";
-import { vi } from "zod/v4/locales";
 
 const mockUseVariationTypes = useVariationTypes as vi.MockedFunction<typeof useVariationTypes>;
 

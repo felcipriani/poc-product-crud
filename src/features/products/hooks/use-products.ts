@@ -40,15 +40,10 @@ export function useProducts(): UseProductsReturn {
   const optimisticList = useOptimisticList<Product, string>([], (product) => product.sku);
 
   // Initialize services with useMemo to prevent recreation on every render
+  const productRepository = useMemo(() => new ProductRepository(), []);
   const productService = useMemo(() => {
-    const productRepository = new ProductRepository();
-    const variationItemRepository = new ProductVariationItemRepository();
-    const compositionItemRepository = new CompositionItemRepository();
-    return new ProductService(
-      productRepository,
-      variationItemRepository,
-      compositionItemRepository
-    );
+    // ProductService is static, no need to instantiate
+    return ProductService;
   }, []);
 
   const loadProducts = useCallback(async () => {
@@ -60,17 +55,22 @@ export function useProducts(): UseProductsReturn {
         let products: Product[];
 
         if (filters.search) {
-          products = await productService.searchProducts(filters.search);
+          products = await productRepository.search(filters.search);
         } else if (
           filters.isComposite !== undefined ||
           filters.hasVariation !== undefined
         ) {
-          products = await productService.getProductsByType({
-            isComposite: filters.isComposite,
-            hasVariation: filters.hasVariation,
+          products = await productRepository.findWhere((product) => {
+            if (filters.isComposite !== undefined && product.isComposite !== filters.isComposite) {
+              return false;
+            }
+            if (filters.hasVariation !== undefined && product.hasVariation !== filters.hasVariation) {
+              return false;
+            }
+            return true;
           });
         } else {
-          products = await productService.getAllProducts();
+          products = await productRepository.findAll();
         }
 
         return products;
@@ -90,7 +90,7 @@ export function useProducts(): UseProductsReturn {
     }
     
     setLoading(false);
-  }, [filters, productService]);
+  }, [filters, optimisticList, productRepository]);
 
   const createProduct = useCallback(
     async (data: CreateProductData) => {
@@ -105,7 +105,7 @@ export function useProducts(): UseProductsReturn {
       optimisticList.addOptimistic(optimisticProduct);
 
       try {
-        const createdProduct = await productService.createProduct(data);
+        const createdProduct = await productRepository.create(data);
         
         // Commit the optimistic update with real data
         const currentProducts = optimisticList.items.filter(p => p.sku !== data.sku);
@@ -119,7 +119,7 @@ export function useProducts(): UseProductsReturn {
         throw err;
       }
     },
-    [productService, optimisticList]
+    [optimisticList, productRepository]
   );
 
   const updateProduct = useCallback(
@@ -128,7 +128,7 @@ export function useProducts(): UseProductsReturn {
       optimisticList.updateOptimistic(sku, { ...data, updatedAt: new Date() });
 
       try {
-        const updatedProduct = await productService.updateProduct(sku, data);
+        const updatedProduct = await productRepository.update(sku, data);
         
         // Commit the optimistic update with real data
         const currentProducts = optimisticList.items.map(p => 
@@ -144,7 +144,7 @@ export function useProducts(): UseProductsReturn {
         throw err;
       }
     },
-    [productService, optimisticList]
+    [optimisticList, productRepository]
   );
 
   const deleteProduct = useCallback(
@@ -153,7 +153,7 @@ export function useProducts(): UseProductsReturn {
       optimisticList.removeOptimistic(sku);
 
       try {
-        await productService.deleteProduct(sku);
+        await productRepository.delete(sku);
         
         // Commit the optimistic update
         optimisticList.commit();
@@ -166,7 +166,7 @@ export function useProducts(): UseProductsReturn {
         throw err;
       }
     },
-    [productService, optimisticList]
+    [optimisticList, productRepository]
   );
 
   const refreshProducts = useCallback(async () => {

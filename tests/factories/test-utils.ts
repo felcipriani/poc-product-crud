@@ -5,6 +5,10 @@ export function createTestUuid(): string {
   return uuidv4();
 }
 
+export function createTestSku(prefix = "TEST"): string {
+  return `${prefix}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+}
+
 export function createTestDate(offsetMs = 0): Date {
   return new Date(Date.now() + offsetMs);
 }

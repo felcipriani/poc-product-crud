@@ -1,485 +1,261 @@
-import {
-  VariationType,
-  CreateVariationTypeData,
-  UpdateVariationTypeData,
-} from '../entities/variation-type';
-import {
-  Variation,
-  CreateVariationData,
-  UpdateVariationData,
-} from '../entities/variation';
-import {
-  ProductVariationItem,
-  CreateProductVariationItemData,
-} from '../entities/product-variation-item';
-import { VariationTypeRepository } from '../../storage/repositories/variation-type-repository';
-import { VariationRepository } from '../../storage/repositories/variation-repository';
-import { ProductVariationItemRepository } from '../../storage/repositories/product-variation-item-repository';
+import { ProductVariationItem, CreateProductVariationItemData, UpdateProductVariationItemData } from '../entities/product-variation-item';
+import { CompositeVariation, CreateCompositeVariationData, UpdateCompositeVariationData } from '../entities/composite-variation';
+import { CompositionItem } from '../entities/composition-item';
+import { Product } from '../entities/product';
 
+/**
+ * Service for managing composite variations and traditional variations
+ */
 export class VariationService {
-  constructor(
-    private variationTypeRepository: VariationTypeRepository,
-    private variationRepository: VariationRepository,
-    private variationItemRepository: ProductVariationItemRepository
-  ) {}
-
-  // ===== VARIATION TYPE METHODS =====
-
   /**
-   * Creates a new variation type with business rule validation
+   * Validate variation creation
    */
-  async createVariationType(data: CreateVariationTypeData): Promise<VariationType> {
-    // Validate business rules
-    await this.validateVariationTypeCreation(data);
+  static validateVariationCreation(
+    data: CreateProductVariationItemData,
+    existingVariations: ProductVariationItem[],
+    product: Product
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
 
-    // Create the variation type
-    const variationType = await this.variationTypeRepository.create(data);
-
-    return variationType;
-  }
-
-  /**
-   * Updates an existing variation type with business rule validation
-   */
-  async updateVariationType(id: string, data: UpdateVariationTypeData): Promise<VariationType> {
-    // Validate business rules
-    await this.validateVariationTypeUpdate(id, data);
-
-    // Update the variation type
-    const variationType = await this.variationTypeRepository.update(id, data);
-
-    return variationType;
-  }
-
-  /**
-   * Deletes a variation type with constraint validation
-   */
-  async deleteVariationType(id: string): Promise<void> {
-    // Validate deletion constraints
-    await this.validateVariationTypeDeletion(id);
-
-    // Delete all variations of this type first
-    await this.variationRepository.deleteByVariationType(id);
-
-    // Delete the variation type
-    await this.variationTypeRepository.delete(id);
-  }
-
-  /**
-   * Gets all variation types
-   */
-  async getAllVariationTypes(): Promise<VariationType[]> {
-    return this.variationTypeRepository.findAll();
-  }
-
-  /**
-   * Gets a variation type by ID
-   */
-  async getVariationType(id: string): Promise<VariationType | null> {
-    return this.variationTypeRepository.findById(id);
-  }
-
-  /**
-   * Searches variation types by name
-   */
-  async searchVariationTypes(query: string): Promise<VariationType[]> {
-    return this.variationTypeRepository.search(query);
-  }
-
-  // ===== VARIATION METHODS =====
-
-  /**
-   * Creates a new variation with business rule validation
-   */
-  async createVariation(data: CreateVariationData): Promise<Variation> {
-    // Validate business rules
-    await this.validateVariationCreation(data);
-
-    // Create the variation
-    const variation = await this.variationRepository.create(data);
-
-    return variation;
-  }
-
-  /**
-   * Updates an existing variation with business rule validation
-   */
-  async updateVariation(id: string, data: UpdateVariationData): Promise<Variation> {
-    // Validate business rules
-    await this.validateVariationUpdate(id, data);
-
-    // Update the variation
-    const variation = await this.variationRepository.update(id, data);
-
-    return variation;
-  }
-
-  /**
-   * Deletes a variation with constraint validation
-   */
-  async deleteVariation(id: string): Promise<void> {
-    // Validate deletion constraints
-    await this.validateVariationDeletion(id);
-
-    // Delete all product variation items using this variation
-    await this.variationItemRepository.deleteByVariation(id);
-
-    // Delete the variation
-    await this.variationRepository.delete(id);
-  }
-
-  /**
-   * Gets all variations
-   */
-  async getAllVariations(): Promise<Variation[]> {
-    return this.variationRepository.findAll();
-  }
-
-  /**
-   * Gets variations by variation type
-   */
-  async getVariationsByType(variationTypeId: string): Promise<Variation[]> {
-    return this.variationRepository.findByVariationType(variationTypeId);
-  }
-
-  /**
-   * Gets variations grouped by type
-   */
-  async getVariationsGroupedByType(): Promise<Record<string, Variation[]>> {
-    return this.variationRepository.findGroupedByType();
-  }
-
-  // ===== PRODUCT VARIATION ITEM METHODS =====
-
-  /**
-   * Creates a product variation item with business rule validation
-   */
-  async createProductVariationItem(data: CreateProductVariationItemData): Promise<ProductVariationItem> {
-    // Validate business rules
-    await this.validateProductVariationItemCreation(data);
-
-    // Create the variation item
-    const variationItem = await this.variationItemRepository.create(data);
-
-    return variationItem;
-  }
-
-  /**
-   * Updates a product variation item with business rule validation
-   */
-  async updateProductVariationItem(
-    id: string,
-    data: Partial<CreateProductVariationItemData>
-  ): Promise<ProductVariationItem> {
-    // Validate business rules
-    await this.validateProductVariationItemUpdate(id, data);
-
-    // Update the variation item
-    const variationItem = await this.variationItemRepository.update(id, data);
-
-    return variationItem;
-  }
-
-  /**
-   * Deletes a product variation item
-   */
-  async deleteProductVariationItem(id: string): Promise<void> {
-    await this.variationItemRepository.delete(id);
-  }
-
-  /**
-   * Gets all variation items for a product
-   */
-  async getProductVariationItems(productSku: string): Promise<ProductVariationItem[]> {
-    return this.variationItemRepository.findByProduct(productSku);
-  }
-
-  /**
-   * Generates all possible combinations for a product
-   */
-  async generateAllCombinations(
-    variationTypeIds: string[]
-  ): Promise<Record<string, string>[]> {
-    // Get variations for each type
-    const variationsByType = await this.variationRepository.findForVariationTypes(variationTypeIds);
-
-    // Convert to the format expected by the generator
-    const variationsForGenerator: Record<string, Array<{ id: string; name: string }>> = {};
-    for (const [typeId, variations] of Object.entries(variationsByType)) {
-      variationsForGenerator[typeId] = variations.map((v) => ({ id: v.id, name: v.name }));
-    }
-
-    // Generate all combinations
-    const combinations: Record<string, string>[] = [];
-    const generator = this.variationItemRepository.generateCombinations(
-      variationTypeIds,
-      variationsForGenerator
-    );
-
-    for await (const combination of generator) {
-      combinations.push(combination);
-    }
-
-    return combinations;
-  }
-
-  /**
-   * Creates variation items from all possible combinations
-   */
-  async createAllCombinations(
-    productSku: string,
-    variationTypeIds: string[],
-    defaultOverrides?: {
-      weightOverride?: number;
-      dimensionsOverride?: { height: number; width: number; depth: number };
-    }
-  ): Promise<ProductVariationItem[]> {
-    // Generate all combinations
-    const combinations = await this.generateAllCombinations(variationTypeIds);
-
-    // Create variation items from combinations
-    return this.variationItemRepository.createFromCombinations(
-      productSku,
-      combinations,
-      defaultOverrides
-    );
-  }
-
-  /**
-   * Checks if variation types require weight override
-   */
-  async requiresWeightOverride(variationTypeIds: string[]): Promise<boolean> {
-    return this.variationTypeRepository.anyModifyWeight(variationTypeIds);
-  }
-
-  /**
-   * Checks if variation types require dimensions override
-   */
-  async requiresDimensionsOverride(variationTypeIds: string[]): Promise<boolean> {
-    return this.variationTypeRepository.anyModifyDimensions(variationTypeIds);
-  }
-
-  // ===== VALIDATION METHODS =====
-
-  /**
-   * Validates variation type creation business rules
-   */
-  private async validateVariationTypeCreation(data: CreateVariationTypeData): Promise<void> {
-    // Check name uniqueness
-    const existingNames = await this.variationTypeRepository.getAllNames();
-    // TODO: Implement VariationTypeBusinessRules.validateNameUniqueness(data.name, existingNames);
-  }
-
-  /**
-   * Validates variation type update business rules
-   */
-  private async validateVariationTypeUpdate(
-    id: string,
-    data: UpdateVariationTypeData
-  ): Promise<void> {
-    const existingVariationType = await this.variationTypeRepository.findById(id);
-    if (!existingVariationType) {
-      throw new Error(`Variation type with ID '${id}' not found`);
-    }
-
-    // Check name uniqueness if name is being updated
-    if (data.name !== undefined) {
-      const existingNames = await this.variationTypeRepository.getAllNames();
-      // TODO: Implement VariationTypeBusinessRules.validateNameUniqueness(data.name, existingNames, id);
-    }
-  }
-
-  /**
-   * Validates variation type deletion constraints
-   */
-  private async validateVariationTypeDeletion(id: string): Promise<void> {
-    const variationType = await this.variationTypeRepository.findById(id);
-    if (!variationType) {
-      throw new Error(`Variation type with ID '${id}' not found`);
-    }
-
-    // Check if any variations exist for this type
-    const variationCount = await this.variationRepository.countByVariationType(id);
-    // TODO: Implement VariationTypeBusinessRules.validateDeletionConstraints(id, variationCount);
-  }
-
-  /**
-   * Validates variation creation business rules
-   */
-  private async validateVariationCreation(data: CreateVariationData): Promise<void> {
-    // Validate that variation type exists
-    const variationType = await this.variationTypeRepository.findById(data.variationTypeId);
-    if (!variationType) {
-      throw new Error(`Variation type with ID '${data.variationTypeId}' not found`);
-    }
-
-    // Check name uniqueness within the variation type
-    const existingVariations = await this.variationRepository.findAll();
-    // TODO: Implement VariationBusinessRules.validateNameUniquenessWithinType(
-    //   data.name,
-    //   data.variationTypeId,
-    //   existingVariations
-    // );
-  }
-
-  /**
-   * Validates variation update business rules
-   */
-  private async validateVariationUpdate(id: string, data: UpdateVariationData): Promise<void> {
-    const existingVariation = await this.variationRepository.findById(id);
-    if (!existingVariation) {
-      throw new Error(`Variation with ID '${id}' not found`);
-    }
-
-    // Check name uniqueness if name is being updated
-    if (data.name !== undefined) {
-      const existingVariations = await this.variationRepository.findAll();
-      // TODO: Implement VariationBusinessRules.validateNameUniquenessWithinType(
-      //   data.name,
-      //   existingVariation.variationTypeId,
-      //   existingVariations,
-      //   id
-      // );
-    }
-  }
-
-  /**
-   * Validates variation deletion constraints
-   */
-  private async validateVariationDeletion(id: string): Promise<void> {
-    const variation = await this.variationRepository.findById(id);
-    if (!variation) {
-      throw new Error(`Variation with ID '${id}' not found`);
-    }
-
-    // Check if the variation is used in any product variation items
-    const usageCount = await this.variationItemRepository.findByVariation(id);
-    // TODO: Implement VariationBusinessRules.validateDeletionConstraints(id, usageCount.length);
-  }
-
-  /**
-   * Validates product variation item creation business rules
-   */
-  private async validateProductVariationItemCreation(
-    data: CreateProductVariationItemData
-  ): Promise<void> {
-    // Check combination uniqueness
-    const existingItems = await this.variationItemRepository.findAll();
-    // TODO: Implement ProductVariationItemBusinessRules.validateCombinationUniqueness(
-    //   data.productSku,
-    //   data.selections,
-    //   existingItems
-    // );
-
-    // Validate that all variation types and variations exist
-    const variationTypeIds = Object.keys(data.selections);
-    const variationIds = Object.values(data.selections);
-
-    // Check variation types exist
-    const variationTypes = await this.variationTypeRepository.findByIds(variationTypeIds);
-    if (variationTypes.length !== variationTypeIds.length) {
-      const foundIds = variationTypes.map((vt) => vt.id);
-      const missingIds = variationTypeIds.filter((id) => !foundIds.includes(id));
-      throw new Error(`Variation types not found: ${missingIds.join(', ')}`);
-    }
-
-    // Check variations exist and belong to correct types
-    const variations = await this.variationRepository.findByIds(variationIds);
-    if (variations.length !== variationIds.length) {
-      const foundIds = variations.map((v) => v.id);
-      const missingIds = variationIds.filter((id) => !foundIds.includes(id));
-      throw new Error(`Variations not found: ${missingIds.join(', ')}`);
-    }
-
-    // Validate variation-type relationships
-    for (const [typeId, variationId] of Object.entries(data.selections)) {
-      const variation = variations.find((v) => v.id === variationId);
-      if (variation && variation.variationTypeId !== typeId) {
-        throw new Error(
-          `Variation '${variationId}' does not belong to variation type '${typeId}'`
-        );
+    // For composite products with variations, selections should be empty
+    if (product.isComposite && product.hasVariation) {
+      if (Object.keys(data.selections).length > 0) {
+        errors.push('Composite variations should not have traditional variation selections');
       }
     }
 
-    // Validate override requirements
-    const weightModifyingTypes = variationTypes
-      .filter((vt) => vt.modifiesWeight)
-      .map((vt) => vt.id);
-    const dimensionsModifyingTypes = variationTypes
-      .filter((vt) => vt.modifiesDimensions)
-      .map((vt) => vt.id);
-
-    // TODO: Implement ProductVariationItemBusinessRules.validateWeightOverrideRequirement(
-    //   data.selections,
-    //   weightModifyingTypes,
-    //   data.weightOverride
-    // );
-
-    // TODO: Implement ProductVariationItemBusinessRules.validateDimensionsOverrideRequirement(
-    //   data.selections,
-    //   dimensionsModifyingTypes,
-    //   data.dimensionsOverride
-    // );
-  }
-
-  /**
-   * Validates product variation item update business rules
-   */
-  private async validateProductVariationItemUpdate(
-    id: string,
-    data: Partial<CreateProductVariationItemData>
-  ): Promise<void> {
-    const existingItem = await this.variationItemRepository.findById(id);
-    if (!existingItem) {
-      throw new Error(`Product variation item with ID '${id}' not found`);
+    // For traditional variations, check for duplicate combinations
+    if (!product.isComposite && Object.keys(data.selections).length > 0) {
+      const duplicate = existingVariations.find(v => 
+        JSON.stringify(v.selections) === JSON.stringify(data.selections)
+      );
+      if (duplicate) {
+        errors.push('This variation combination already exists');
+      }
     }
 
-    // Check combination uniqueness if selections are being updated
-    if (data.selections !== undefined) {
-      const existingItems = await this.variationItemRepository.findAll();
-      // TODO: Implement ProductVariationItemBusinessRules.validateCombinationUniqueness(
-      //   existingItem.productSku,
-      //   data.selections,
-      //   existingItems,
-      //   id
-      // );
+    // Validate weight override
+    if (data.weightOverride !== undefined && data.weightOverride < 0) {
+      errors.push('Weight override must be non-negative');
     }
 
-    // Additional validation would be similar to creation validation
-  }
-
-  /**
-   * Gets variation statistics
-   */
-  async getVariationStats(): Promise<{
-    totalTypes: number;
-    totalVariations: number;
-    totalCombinations: number;
-    typeStats: Array<{
-      typeId: string;
-      typeName: string;
-      variationCount: number;
-      modifiesWeight: boolean;
-      modifiesDimensions: boolean;
-    }>;
-  }> {
-    const variationTypes = await this.variationTypeRepository.findAll();
-    const variations = await this.variationRepository.findAll();
-    const variationItems = await this.variationItemRepository.findAll();
-
-    const typeStats = variationTypes.map((type) => ({
-      typeId: type.id,
-      typeName: type.name,
-      variationCount: variations.filter((v) => v.variationTypeId === type.id).length,
-      modifiesWeight: type.modifiesWeight,
-      modifiesDimensions: type.modifiesDimensions,
-    }));
+    // Validate dimensions override
+    if (data.dimensionsOverride) {
+      const { height, width, depth } = data.dimensionsOverride;
+      if (height !== undefined && height <= 0) {
+        errors.push('Height override must be positive');
+      }
+      if (width !== undefined && width <= 0) {
+        errors.push('Width override must be positive');
+      }
+      if (depth !== undefined && depth <= 0) {
+        errors.push('Depth override must be positive');
+      }
+    }
 
     return {
-      totalTypes: variationTypes.length,
-      totalVariations: variations.length,
-      totalCombinations: variationItems.length,
-      typeStats,
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Generate automatic variation name for composite variations
+   */
+  static generateVariationName(
+    existingVariations: ProductVariationItem[],
+    prefix: string = 'Variation'
+  ): string {
+    const existingNumbers = existingVariations
+      .map(v => {
+        // Try to extract number from names like "Variation 1", "Variation 2" or IDs
+        const nameOrId = v.name || v.id;
+        const match = nameOrId.match(new RegExp(`^${prefix}[\\s-]?(\\d+)$`));
+        return match ? parseInt(match[1], 10) : null;
+      })
+      .filter((num): num is number => num !== null)
+      .sort((a, b) => a - b);
+
+    let nextNumber = 1;
+    for (const num of existingNumbers) {
+      if (num === nextNumber) {
+        nextNumber++;
+      } else {
+        break;
+      }
+    }
+
+    return `${prefix} ${nextNumber}`;
+  }
+
+  /**
+   * Validate minimum variation requirements
+   */
+  static validateMinimumVariations(
+    variations: ProductVariationItem[],
+    product: Product
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Products with variations must have at least one variation
+    if (product.hasVariation && variations.length === 0) {
+      errors.push('Products with variations must have at least one variation');
+    }
+
+    // Composite products with variations must have at least one variation
+    if (product.isComposite && product.hasVariation && variations.length === 0) {
+      errors.push('Composite products with variations must have at least one variation');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Calculate variation weight considering composition
+   */
+  static calculateVariationWeight(
+    variation: ProductVariationItem,
+    product: Product,
+    compositionItems: CompositionItem[],
+    childProducts: Product[] = []
+  ): number {
+    // If variation has explicit weight override, use it
+    if (variation.weightOverride !== undefined) {
+      return variation.weightOverride;
+    }
+
+    // For composite variations, calculate from composition items
+    if (product.isComposite) {
+      const variationSku = `${product.sku}#${variation.id}`;
+      const variationCompositionItems = compositionItems.filter(item => 
+        item.parentSku === variationSku
+      );
+
+      return variationCompositionItems.reduce((total, item) => {
+        const childProduct = childProducts.find(p => p.sku === item.childSku);
+        const childWeight = childProduct?.weight || 0;
+        return total + (childWeight * item.quantity);
+      }, 0);
+    }
+
+    // Fallback to product base weight
+    return product.weight || 0;
+  }
+
+  /**
+   * Validate variation ordering
+   */
+  static validateVariationOrdering(
+    variations: ProductVariationItem[],
+    newOrder: string[]
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Check that all variation IDs are present
+    const variationIds = new Set(variations.map(v => v.id));
+    const orderIds = new Set(newOrder);
+
+    if (variationIds.size !== orderIds.size) {
+      errors.push('Order must include all variations');
+    }
+
+    for (const id of newOrder) {
+      if (!variationIds.has(id)) {
+        errors.push(`Unknown variation ID: ${id}`);
+      }
+    }
+
+    for (const id of variationIds) {
+      if (!orderIds.has(id)) {
+        errors.push(`Missing variation ID in order: ${id}`);
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Convert ProductVariationItem to CompositeVariation
+   */
+  static toCompositeVariation(
+    variation: ProductVariationItem,
+    product: Product,
+    compositionItems: CompositionItem[],
+    index: number
+  ): CompositeVariation {
+    const variationSku = `${product.sku}#${variation.id}`;
+    const variationCompositionItems = compositionItems.filter(item => 
+      item.parentSku === variationSku
+    );
+
+    const totalWeight = this.calculateVariationWeight(
+      variation,
+      product,
+      compositionItems
+    );
+
+    return {
+      id: variation.id,
+      productSku: product.sku,
+      name: `Variation ${index + 1}`, // Simple naming for now
+      compositionItems: variationCompositionItems,
+      totalWeight,
+      isActive: true,
+      createdAt: variation.createdAt,
+      updatedAt: variation.updatedAt
+    };
+  }
+
+  /**
+   * Validate composite variation data
+   */
+  static validateCompositeVariation(
+    data: CreateCompositeVariationData | UpdateCompositeVariationData,
+    existingVariations: CompositeVariation[] = [],
+    excludeId?: string
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Validate name uniqueness if provided
+    if ('name' in data && data.name) {
+      const normalizedName = data.name.toLowerCase().trim();
+      const duplicate = existingVariations.find(v => 
+        v.name.toLowerCase().trim() === normalizedName && v.id !== excludeId
+      );
+      if (duplicate) {
+        errors.push(`Variation name "${data.name}" is already in use`);
+      }
+    }
+
+    // Validate composition items if provided
+    if ('compositionItems' in data && data.compositionItems) {
+      if (data.compositionItems.length === 0) {
+        errors.push('Variation must have at least one composition item');
+      }
+
+      // Check for duplicate child SKUs
+      const childSkus = data.compositionItems.map(item => item.childSku);
+      const uniqueSkus = new Set(childSkus);
+      if (childSkus.length !== uniqueSkus.size) {
+        errors.push('Duplicate products are not allowed in the same variation');
+      }
+
+      // Validate quantities
+      const invalidQuantities = data.compositionItems.filter(item => item.quantity <= 0);
+      if (invalidQuantities.length > 0) {
+        errors.push('All quantities must be greater than zero');
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
     };
   }
 }

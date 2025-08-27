@@ -37,11 +37,7 @@ export function useVariationTypes(): UseVariationTypesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load variation types';
       setError(message);
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error('Error', message);
     } finally {
       setLoading(false);
     }
@@ -53,18 +49,15 @@ export function useVariationTypes(): UseVariationTypesReturn {
         setError(null);
         await repository.create(data);
         await loadVariationTypes(false); // Don't clear error on reload
-        toast({
-          title: 'Success',
-          description: 'Variation type created successfully',
-        });
+        toast.success('Success', 'Variation type created successfully');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to create variation type';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -77,18 +70,18 @@ export function useVariationTypes(): UseVariationTypesReturn {
         setError(null);
         await repository.update(id, data);
         await loadVariationTypes(false); // Don't clear error on reload
-        toast({
-          title: 'Success',
-          description: 'Variation type updated successfully',
-        });
+//         // toast({
+//           title: 'Success',
+//           description: 'Variation type updated successfully',
+//         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update variation type';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -101,18 +94,18 @@ export function useVariationTypes(): UseVariationTypesReturn {
         setError(null);
         await repository.delete(id);
         await loadVariationTypes(false); // Don't clear error on reload
-        toast({
-          title: 'Success',
-          description: 'Variation type deleted successfully',
-        });
+//         // toast({
+//           title: 'Success',
+//           description: 'Variation type deleted successfully',
+//         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete variation type';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -129,11 +122,11 @@ export function useVariationTypes(): UseVariationTypesReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to search variation types';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
       } finally {
         setLoading(false);
       }

@@ -105,7 +105,7 @@ export function VariationList({
         <div>
           <div className="font-medium text-gray-900">{variation.name}</div>
           <div className="text-sm text-gray-500">
-            Created {new Date(variation.createdAt).toLocaleDateString()}
+            Created {new Date(variation.createdAt).toLocaleDateString('en-US')}
           </div>
         </div>
       ),

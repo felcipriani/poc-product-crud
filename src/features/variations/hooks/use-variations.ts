@@ -46,11 +46,11 @@ export function useVariations(): UseVariationsReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load data';
       setError(message);
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+//       // toast({
+//         title: 'Error',
+//         description: message,
+//         variant: 'destructive',
+//       });
     } finally {
       setLoading(false);
     }
@@ -62,18 +62,18 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.create(data);
         await loadData();
-        toast({
-          title: 'Success',
-          description: 'Variation created successfully',
-        });
+//         // toast({
+//           title: 'Success',
+//           description: 'Variation created successfully',
+//         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to create variation';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -86,18 +86,18 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.update(id, data);
         await loadData();
-        toast({
-          title: 'Success',
-          description: 'Variation updated successfully',
-        });
+//         // toast({
+//           title: 'Success',
+//           description: 'Variation updated successfully',
+//         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update variation';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -110,18 +110,18 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.delete(id);
         await loadData();
-        toast({
-          title: 'Success',
-          description: 'Variation deleted successfully',
-        });
+//         // toast({
+//           title: 'Success',
+//           description: 'Variation deleted successfully',
+//         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete variation';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
         throw err;
       }
     },
@@ -138,11 +138,11 @@ export function useVariations(): UseVariationsReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to search variations';
         setError(message);
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-        });
+//         // toast({
+//           title: 'Error',
+//           description: message,
+//           variant: 'destructive',
+//         });
       } finally {
         setLoading(false);
       }

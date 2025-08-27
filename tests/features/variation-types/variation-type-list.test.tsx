@@ -1,8 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { VariationTypeList } from "@/features/variation-types/components/variation-type-list";
 import { VariationType } from "@/lib/domain/entities/variation-type";
+import { useVariationTypes } from "@/features/variation-types/hooks/use-variation-types";
 
 // Mock the hook
 vi.mock("@/features/variation-types/hooks/use-variation-types", () => ({
@@ -13,10 +14,6 @@ vi.mock("@/features/variation-types/hooks/use-variation-types", () => ({
 vi.mock("@/hooks/use-toast", () => ({
   toast: vi.fn(),
 }));
-
-import { useVariationTypes } from "@/features/variation-types/hooks/use-variation-types";
-import { beforeEach } from "node:test";
-import { vi } from "zod/v4/locales";
 
 const mockUseVariationTypes = useVariationTypes as vi.MockedFunction<
   typeof useVariationTypes

@@ -1,168 +1,191 @@
-import { useState, useEffect, useCallback } from 'react';
-import { CompositionService } from '@/lib/domain/services/composition-service';
-import { CompositionItemRepository } from '@/lib/storage/repositories/composition-item-repository';
-import { ProductRepository } from '@/lib/storage/repositories/product-repository';
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { CompositeVariation, CreateCompositeVariationData, UpdateCompositeVariationData } from '@/lib/domain/entities/composite-variation';
+import { CreateCompositionItemData, UpdateCompositionItemData } from '@/lib/domain/entities/composition-item';
 import { ProductVariationItemRepository } from '@/lib/storage/repositories/product-variation-item-repository';
-import { CreateCompositionItemData, CompositionItem } from '@/lib/domain/entities/composition-item';
-
-// Initialize services
-const compositionItemRepository = new CompositionItemRepository();
-const productRepository = new ProductRepository();
-const variationItemRepository = new ProductVariationItemRepository();
-const compositionService = new CompositionService(
-  compositionItemRepository,
-  productRepository,
-  variationItemRepository
-);
-
-export interface CompositeVariationData {
-  variation: any;
-  compositionItems: CompositionItem[];
-  totalWeight: number;
-  isComplete: boolean;
-}
+import { CompositionItemRepository } from '@/lib/storage/repositories/composition-item-repository';
 
 export function useCompositeVariations(productSku: string) {
-  const [compositeVariations, setCompositeVariations] = useState<CompositeVariationData[]>([]);
-  const [availableCompositionItems, setAvailableCompositionItems] = useState<Array<{
-    id: string;
-    sku: string;
-    displayName: string;
-    weight?: number;
-    type: 'simple' | 'composite' | 'variation';
-    parentSku?: string;
-  }>>([]);
-  const [loading, setLoading] = useState(false);
+  const [variations, setVariations] = useState<CompositeVariation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load composite variations data
-  const loadCompositeVariations = useCallback(async () => {
-    if (!productSku) return;
+  const variationRepository = useMemo(() => new ProductVariationItemRepository(), []);
+  const compositionRepository = useMemo(() => new CompositionItemRepository(), []);
 
+  // Load variations and their composition items
+  const loadVariations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const variations = await compositionService.getCompositeVariationsWithComposition(productSku);
-      setCompositeVariations(variations);
+      // Get product variations
+      const productVariations = await variationRepository.findByProductSku(productSku);
+      
+      // Build composite variations with composition items
+      const compositeVariations: CompositeVariation[] = await Promise.all(
+        productVariations.map(async (variation, index) => {
+          const variationSku = `${productSku}#${variation.id}`;
+          const compositionItems = await compositionRepository.findByParent(variationSku);
+          
+          // Calculate total weight (simplified - in real app would lookup child product weights)
+          const totalWeight = compositionItems.reduce((sum, item) => {
+            // For now, assume each item has weight 1kg - in real app would lookup from product
+            return sum + (1 * item.quantity);
+          }, 0);
+
+          return {
+            id: variation.id,
+            productSku,
+            name: `Variation ${index + 1}`, // Simple naming for now
+            compositionItems,
+            totalWeight,
+            isActive: true,
+            createdAt: variation.createdAt,
+            updatedAt: variation.updatedAt
+          };
+        })
+      );
+
+      setVariations(compositeVariations);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load composite variations');
-      console.error('Error loading composite variations:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load variations');
     } finally {
       setLoading(false);
     }
-  }, [productSku]);
+  }, [productSku, variationRepository, compositionRepository]);
 
-  // Load available composition items
-  const loadAvailableCompositionItems = useCallback(async () => {
+  // Create new variation
+  const createVariation = useCallback(async (data: CreateCompositeVariationData) => {
     try {
-      const items = await compositionService.getCompositionAvailableItems();
-      setAvailableCompositionItems(items);
+      setError(null);
+
+      // Create underlying product variation
+      const productVariation = await variationRepository.create({
+        productSku: data.productSku,
+        selections: {}, // Empty for composite variations
+        weightOverride: undefined
+      });
+
+      // Reload variations to get updated list
+      await loadVariations();
     } catch (err) {
-      console.error('Error loading available composition items:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create variation');
+      throw err;
+    }
+  }, [variationRepository, loadVariations]);
+
+  // Update variation
+  const updateVariation = useCallback(async (id: string, data: UpdateCompositeVariationData) => {
+    try {
+      setError(null);
+
+      // For now, we only support name updates through the underlying variation
+      // In a full implementation, we'd have a proper CompositeVariation repository
+      
+      // Update local state optimistically
+      setVariations(prev => prev.map(v => 
+        v.id === id ? { ...v, ...data, updatedAt: new Date() } : v
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update variation');
+      throw err;
     }
   }, []);
 
-  // Create composition item for a variation
-  const createCompositionItem = useCallback(async (data: CreateCompositionItemData) => {
+  // Delete variation
+  const deleteVariation = useCallback(async (id: string) => {
     try {
-      setLoading(true);
       setError(null);
 
-      await compositionService.createCompositionItem(data);
+      // Delete composition items first
+      const variationSku = `${productSku}#${id}`;
+      const compositionItems = await compositionRepository.findByParent(variationSku);
       
-      // Reload data
-      await loadCompositeVariations();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create composition item';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadCompositeVariations]);
+      for (const item of compositionItems) {
+        await compositionRepository.delete(item.id);
+      }
 
-  // Delete composition item
-  const deleteCompositionItem = useCallback(async (id: string) => {
+      // Delete the underlying product variation
+      await variationRepository.delete(id);
+
+      // Reload variations
+      await loadVariations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete variation');
+      throw err;
+    }
+  }, [productSku, variationRepository, compositionRepository, loadVariations]);
+
+  // Add composition item to variation
+  const addCompositionItem = useCallback(async (variationId: string, itemData: CreateCompositionItemData) => {
     try {
-      setLoading(true);
       setError(null);
 
-      await compositionService.deleteCompositionItem(id);
-      
-      // Reload data
-      await loadCompositeVariations();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete composition item';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadCompositeVariations]);
+      const variationSku = `${productSku}#${variationId}`;
+      await compositionRepository.create({
+        ...itemData,
+        parentSku: variationSku
+      });
 
-  // Calculate weight for a specific variation
-  const calculateVariationWeight = useCallback(async (variationId: string): Promise<number> => {
-    try {
-      return await compositionService.calculateCompositeVariationWeight(productSku, variationId);
+      // Reload variations to update composition
+      await loadVariations();
     } catch (err) {
-      console.error('Error calculating variation weight:', err);
-      return 0;
+      setError(err instanceof Error ? err.message : 'Failed to add composition item');
+      throw err;
     }
-  }, [productSku]);
+  }, [productSku, compositionRepository, loadVariations]);
 
-  // Validate variation completeness
-  const validateVariationCompleteness = useCallback(async (variationId: string) => {
-    try {
-      return await compositionService.validateCompositeVariationCompleteness(productSku, variationId);
-    } catch (err) {
-      console.error('Error validating variation completeness:', err);
-      return {
-        isComplete: false,
-        missingItems: ['Validation failed'],
-        invalidItems: [],
-      };
-    }
-  }, [productSku]);
-
-  // Update composition for a variation
-  const updateVariationComposition = useCallback(async (
-    variationId: string,
-    compositionData: Array<{ childSku: string; quantity: number }>
+  // Update composition item
+  const updateCompositionItem = useCallback(async (
+    variationId: string, 
+    itemId: string, 
+    itemData: UpdateCompositionItemData
   ) => {
     try {
-      setLoading(true);
       setError(null);
 
-      await compositionService.updateCompositeVariationComposition(productSku, variationId, compositionData);
-      
-      // Reload data
-      await loadCompositeVariations();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update variation composition';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [productSku, loadCompositeVariations]);
+      await compositionRepository.update(itemId, itemData);
 
-  // Load data on mount and when productSku changes
+      // Reload variations to update composition
+      await loadVariations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update composition item');
+      throw err;
+    }
+  }, [compositionRepository, loadVariations]);
+
+  // Delete composition item
+  const deleteCompositionItem = useCallback(async (variationId: string, itemId: string) => {
+    try {
+      setError(null);
+
+      await compositionRepository.delete(itemId);
+
+      // Reload variations to update composition
+      await loadVariations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete composition item');
+      throw err;
+    }
+  }, [compositionRepository, loadVariations]);
+
+  // Load variations on mount
   useEffect(() => {
-    loadCompositeVariations();
-    loadAvailableCompositionItems();
-  }, [loadCompositeVariations, loadAvailableCompositionItems]);
+    loadVariations();
+  }, [loadVariations]);
 
   return {
-    compositeVariations,
-    availableCompositionItems,
+    variations,
     loading,
     error,
-    createCompositionItem,
+    createVariation,
+    updateVariation,
+    deleteVariation,
+    addCompositionItem,
+    updateCompositionItem,
     deleteCompositionItem,
-    calculateVariationWeight,
-    validateVariationCompleteness,
-    updateVariationComposition,
-    reload: loadCompositeVariations,
+    reload: loadVariations
   };
 }

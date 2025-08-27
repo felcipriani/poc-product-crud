@@ -5,6 +5,7 @@ export const ProductVariationItemSchema = z.object({
   id: z.string().uuid("Invalid product variation item ID"),
   productSku: z.string().min(1, "Product SKU is required"),
   selections: z.record(z.string().uuid(), z.string().uuid()),
+  name: z.string().optional(),
   weightOverride: z.number().positive().optional(),
   dimensionsOverride: DimensionsSchema.optional(),
   createdAt: z.coerce.date(),
@@ -16,12 +17,14 @@ export type ProductVariationItem = z.infer<typeof ProductVariationItemSchema>;
 export interface CreateProductVariationItemData {
   productSku: string;
   selections: Record<string, string>; // variationTypeId -> variationId
+  name?: string;
   weightOverride?: number;
   dimensionsOverride?: Dimensions;
 }
 
 export interface UpdateProductVariationItemData {
   selections?: Record<string, string>;
+  name?: string;
   weightOverride?: number;
   dimensionsOverride?: Dimensions;
 }
@@ -31,6 +34,7 @@ export class ProductVariationItemEntity {
     public readonly id: string,
     public readonly productSku: string,
     public readonly selections: Record<string, string>,
+    public readonly name: string | undefined,
     public readonly weightOverride: number | undefined,
     public readonly dimensionsOverride: Dimensions | undefined,
     public readonly createdAt: Date,
@@ -40,6 +44,7 @@ export class ProductVariationItemEntity {
       id,
       productSku,
       selections,
+      name,
       weightOverride,
       dimensionsOverride,
       createdAt,
@@ -53,6 +58,7 @@ export class ProductVariationItemEntity {
       id,
       data.productSku,
       data.selections,
+      data.name,
       data.weightOverride,
       data.dimensionsOverride,
       now,
@@ -65,6 +71,7 @@ export class ProductVariationItemEntity {
       data.id,
       data.productSku,
       data.selections,
+      data.name,
       data.weightOverride,
       data.dimensionsOverride,
       data.createdAt,
@@ -77,6 +84,7 @@ export class ProductVariationItemEntity {
       this.id,
       this.productSku,
       data.selections ?? this.selections,
+      data.name ?? this.name,
       data.weightOverride ?? this.weightOverride,
       data.dimensionsOverride ?? this.dimensionsOverride,
       this.createdAt,
@@ -138,6 +146,7 @@ export class ProductVariationItemEntity {
       id: this.id,
       productSku: this.productSku,
       selections: this.selections,
+      name: this.name,
       weightOverride: this.weightOverride,
       dimensionsOverride: this.dimensionsOverride,
       createdAt: this.createdAt,

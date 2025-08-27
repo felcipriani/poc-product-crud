@@ -285,4 +285,129 @@ export class CompositionItemRepository extends BaseRepository<
     await this.validateForDeletion(id);
     await super.delete(id);
   }
+
+  /**
+   * Batch create composition items
+   */
+  async createBatch(dataArray: CreateCompositionItemData[]): Promise<CompositionItem[]> {
+    const createdItems: CompositionItem[] = [];
+    
+    for (const data of dataArray) {
+      await this.validateForCreation(data);
+      const item = await this.create(data);
+      createdItems.push(item);
+    }
+    
+    return createdItems;
+  }
+
+  /**
+   * Find composition items by parent SKU pattern (for variations)
+   */
+  async findByParentPattern(parentSkuPattern: string): Promise<CompositionItem[]> {
+    const items = await this.findAll();
+    return items.filter(item => item.parentSku.startsWith(parentSkuPattern));
+  }
+
+  /**
+   * Delete all composition items for a parent pattern (for variations)
+   */
+  async deleteByParentPattern(parentSkuPattern: string): Promise<void> {
+    const items = await this.findByParentPattern(parentSkuPattern);
+    const itemIds = items.map(item => item.id);
+    
+    if (itemIds.length > 0) {
+      await this.deleteMany(itemIds);
+    }
+  }
+
+  /**
+   * Move composition items from one parent to another (for migrations)
+   */
+  async moveItems(fromParentSku: string, toParentSku: string): Promise<CompositionItem[]> {
+    const items = await this.findByParent(fromParentSku);
+    const movedItems: CompositionItem[] = [];
+
+    for (const item of items) {
+      const updatedItem = await this.update(item.id, { quantity: item.quantity });
+      movedItems.push(updatedItem);
+    }
+
+    return movedItems;
+  }
+
+  /**
+   * Copy composition items from one parent to another
+   */
+  async copyItems(fromParentSku: string, toParentSku: string): Promise<CompositionItem[]> {
+    const sourceItems = await this.findByParent(fromParentSku);
+    const copiedItems: CompositionItem[] = [];
+
+    for (const sourceItem of sourceItems) {
+      const copiedItem = await this.create({
+        parentSku: toParentSku,
+        childSku: sourceItem.childSku,
+        quantity: sourceItem.quantity
+      });
+      copiedItems.push(copiedItem);
+    }
+
+    return copiedItems;
+  }
+
+  /**
+   * Get composition statistics
+   */
+  async getCompositionStats(): Promise<{
+    totalItems: number;
+    uniqueParents: number;
+    uniqueChildren: number;
+    averageItemsPerParent: number;
+  }> {
+    const items = await this.findAll();
+    const uniqueParents = new Set(items.map(item => item.parentSku)).size;
+    const uniqueChildren = new Set(items.map(item => item.childSku)).size;
+    
+    return {
+      totalItems: items.length,
+      uniqueParents,
+      uniqueChildren,
+      averageItemsPerParent: uniqueParents > 0 ? items.length / uniqueParents : 0
+    };
+  }
+
+  /**
+   * Validate referential integrity
+   */
+  async validateIntegrity(availableProducts: string[]): Promise<{
+    valid: boolean;
+    orphanedItems: CompositionItem[];
+    missingChildren: string[];
+  }> {
+    const items = await this.findAll();
+    const orphanedItems: CompositionItem[] = [];
+    const missingChildren: string[] = [];
+
+    for (const item of items) {
+      // Check if parent exists (extract base SKU for variations)
+      const baseParentSku = item.parentSku.split('#')[0];
+      if (!availableProducts.includes(baseParentSku)) {
+        orphanedItems.push(item);
+      }
+
+      // Check if child exists (extract base SKU for variations)
+      const baseChildSku = item.childSku.split('#')[0];
+      if (!availableProducts.includes(baseChildSku)) {
+        if (!missingChildren.includes(item.childSku)) {
+          missingChildren.push(item.childSku);
+        }
+      }
+    }
+
+    return {
+      valid: orphanedItems.length === 0 && missingChildren.length === 0,
+      orphanedItems,
+      missingChildren
+    };
+  }
 }

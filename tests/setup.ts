@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { beforeAll, afterEach, afterAll, vi } from "vitest";
+import { beforeAll, afterEach, afterAll, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 // Mock localStorage
@@ -19,6 +19,12 @@ afterEach(() => {
   cleanup();
   localStorageMock.clear();
   vi.clearAllMocks();
+});
+
+// Reset all mocks before each test
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorageMock.getItem.mockReturnValue(null);
 });
 
 // Setup MSW

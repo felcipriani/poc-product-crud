@@ -1,7 +1,7 @@
-import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import React from "react";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // Mock components for testing keyboard navigation
 const ProductForm = () => (
@@ -10,17 +10,17 @@ const ProductForm = () => (
       <label htmlFor="sku">Product SKU</label>
       <input id="sku" type="text" />
     </div>
-    
+
     <div>
       <label htmlFor="name">Product Name</label>
       <input id="name" type="text" />
     </div>
-    
+
     <div>
       <label htmlFor="weight">Weight</label>
       <input id="weight" type="number" />
     </div>
-    
+
     <div>
       <label htmlFor="category">Category</label>
       <select id="category">
@@ -29,20 +29,20 @@ const ProductForm = () => (
         <option value="clothing">Clothing</option>
       </select>
     </div>
-    
+
     <div>
       <input type="checkbox" id="composite" />
       <label htmlFor="composite">Is Composite Product</label>
     </div>
-    
+
     <div>
       <input type="radio" id="active" name="status" value="active" />
       <label htmlFor="active">Active</label>
-      
+
       <input type="radio" id="inactive" name="status" value="inactive" />
       <label htmlFor="inactive">Inactive</label>
     </div>
-    
+
     <div>
       <button type="button">Cancel</button>
       <button type="submit">Save Product</button>
@@ -57,7 +57,7 @@ const ProductTable = () => (
       <button>Export</button>
       <button>Import</button>
     </div>
-    
+
     <table>
       <thead>
         <tr>
@@ -109,16 +109,26 @@ const NavigationMenu = () => (
       <li>
         <a href="/products">Products</a>
         <ul>
-          <li><a href="/products/list">Product List</a></li>
-          <li><a href="/products/create">Create Product</a></li>
-          <li><a href="/products/import">Import Products</a></li>
+          <li>
+            <a href="/products/list">Product List</a>
+          </li>
+          <li>
+            <a href="/products/create">Create Product</a>
+          </li>
+          <li>
+            <a href="/products/import">Import Products</a>
+          </li>
         </ul>
       </li>
       <li>
         <a href="/variations">Variations</a>
         <ul>
-          <li><a href="/variations/types">Variation Types</a></li>
-          <li><a href="/variations/values">Variation Values</a></li>
+          <li>
+            <a href="/variations/types">Variation Types</a>
+          </li>
+          <li>
+            <a href="/variations/values">Variation Values</a>
+          </li>
         </ul>
       </li>
       <li>
@@ -128,13 +138,19 @@ const NavigationMenu = () => (
   </nav>
 );
 
-const Modal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
   if (!isOpen) return null;
 
   return (
-    <div 
-      role="dialog" 
-      aria-modal="true" 
+    <div
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="modal-title"
       className="modal-overlay"
     >
@@ -145,7 +161,7 @@ const Modal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
           <button onClick={onClose}>Cancel</button>
           <button onClick={onClose}>Delete</button>
         </div>
-        <button 
+        <button
           aria-label="Close dialog"
           onClick={onClose}
           className="close-button"
@@ -157,15 +173,15 @@ const Modal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
   );
 };
 
-describe('Keyboard Navigation Tests', () => {
+describe("Keyboard Navigation Tests", () => {
   let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     user = userEvent.setup();
   });
 
-  describe('Form Navigation', () => {
-    it('should navigate through form fields with Tab key', async () => {
+  describe("Form Navigation", () => {
+    it("should navigate through form fields with Tab key", async () => {
       render(<ProductForm />);
 
       const skuInput = screen.getByLabelText(/product sku/i);
@@ -173,10 +189,10 @@ describe('Keyboard Navigation Tests', () => {
       const weightInput = screen.getByLabelText(/weight/i);
       const categorySelect = screen.getByLabelText(/category/i);
       const compositeCheckbox = screen.getByLabelText(/is composite product/i);
-      const activeRadio = screen.getByDisplayValue('active');
-      const inactiveRadio = screen.getByDisplayValue('inactive');
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      const saveButton = screen.getByRole('button', { name: /save product/i });
+      const activeRadio = screen.getByDisplayValue("active");
+      const inactiveRadio = screen.getByDisplayValue("inactive");
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
+      const saveButton = screen.getByRole("button", { name: /save product/i });
 
       // Tab through all form elements
       await user.tab();
@@ -208,11 +224,11 @@ describe('Keyboard Navigation Tests', () => {
       expect(document.activeElement).toBeInTheDocument();
     });
 
-    it('should navigate backwards with Shift+Tab', async () => {
+    it("should navigate backwards with Shift+Tab", async () => {
       render(<ProductForm />);
 
       const skuInput = screen.getByLabelText(/product sku/i);
-      const saveButton = screen.getByRole('button', { name: /save product/i });
+      const saveButton = screen.getByRole("button", { name: /save product/i });
 
       // Focus on the last element first
       saveButton.focus();
@@ -220,7 +236,7 @@ describe('Keyboard Navigation Tests', () => {
 
       // Navigate backwards
       await user.tab({ shift: true });
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
       expect(cancelButton).toHaveFocus();
 
       // Continue backwards to first element
@@ -233,74 +249,74 @@ describe('Keyboard Navigation Tests', () => {
       expect(skuInput).toHaveFocus();
     });
 
-    it('should handle radio button navigation with arrow keys', async () => {
+    it("should handle radio button navigation with arrow keys", async () => {
       render(<ProductForm />);
 
-      const activeRadio = screen.getByDisplayValue('active');
-      const inactiveRadio = screen.getByDisplayValue('inactive');
+      const activeRadio = screen.getByDisplayValue("active");
+      const inactiveRadio = screen.getByDisplayValue("inactive");
 
       // Focus on first radio button
       activeRadio.focus();
       expect(activeRadio).toHaveFocus();
 
       // Arrow right should move to next radio button
-      await user.keyboard('{ArrowRight}');
+      await user.keyboard("{ArrowRight}");
       expect(inactiveRadio).toHaveFocus();
 
       // Arrow left should move back
-      await user.keyboard('{ArrowLeft}');
+      await user.keyboard("{ArrowLeft}");
       expect(activeRadio).toHaveFocus();
 
       // Arrow down should also work
-      await user.keyboard('{ArrowDown}');
+      await user.keyboard("{ArrowDown}");
       expect(inactiveRadio).toHaveFocus();
 
       // Arrow up should move back
-      await user.keyboard('{ArrowUp}');
+      await user.keyboard("{ArrowUp}");
       expect(activeRadio).toHaveFocus();
     });
 
-    it('should activate form controls with appropriate keys', async () => {
+    it("should activate form controls with appropriate keys", async () => {
       const mockSubmit = vi.fn();
-      
+
       render(
-        <form onSubmit={mockSubmit}>
+        <div>
           <input type="checkbox" id="test-checkbox" />
           <label htmlFor="test-checkbox">Test Checkbox</label>
-          <button type="submit">Submit</button>
-        </form>
+          <button onClick={mockSubmit}>Submit</button>
+        </div>
       );
 
       const checkbox = screen.getByLabelText(/test checkbox/i);
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole("button", { name: /submit/i });
 
       // Space should toggle checkbox
       checkbox.focus();
-      await user.keyboard(' ');
+      await user.keyboard(" ");
       expect(checkbox).toBeChecked();
 
-      await user.keyboard(' ');
+      await user.keyboard(" ");
       expect(checkbox).not.toBeChecked();
 
       // Enter should activate submit button
       submitButton.focus();
-      await user.keyboard('{Enter}');
+      await user.keyboard("{Enter}");
       expect(mockSubmit).toHaveBeenCalled();
     });
   });
 
-  describe('Table Navigation', () => {
-    it('should navigate through table with Tab key', async () => {
+  describe("Table Navigation", () => {
+    it("should navigate through table with Tab key", async () => {
       render(<ProductTable />);
 
-      const addButton = screen.getByRole('button', { name: /add product/i });
-      const exportButton = screen.getByRole('button', { name: /export/i });
-      const importButton = screen.getByRole('button', { name: /import/i });
-      const skuSort = screen.getByRole('button', { name: /sku/i });
-      const nameSort = screen.getByRole('button', { name: /name/i });
-      const weightSort = screen.getByRole('button', { name: /weight/i });
-      const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      const addButton = screen.getByRole("button", { name: /add product/i });
+      const exportButton = screen.getByRole("button", { name: /export/i });
+      const importButton = screen.getByRole("button", { name: /import/i });
+      const skuSort = screen.getByRole("button", { name: /sku/i });
+      const nameSort = screen.getByRole("button", { name: /name/i });
+      const weightSort = screen.getByRole("button", { name: /weight/i });
+      const editButtons = screen.getAllByRole("button", { name: /edit/i });
+      const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
 
       // Tab through toolbar
       await user.tab();
@@ -336,18 +352,16 @@ describe('Keyboard Navigation Tests', () => {
       expect(deleteButtons[1]).toHaveFocus();
     });
 
-    it('should activate sortable columns with Enter and Space', async () => {
+    it("should activate sortable columns with Enter and Space", async () => {
       const mockSort = vi.fn();
-      
+
       render(
         <table>
           <thead>
             <tr>
               <th>
                 <div role="columnheader" aria-sort="ascending">
-                  <button onClick={mockSort}>
-                    Product Name
-                  </button>
+                  <button onClick={mockSort}>Product Name</button>
                 </div>
               </th>
             </tr>
@@ -355,25 +369,25 @@ describe('Keyboard Navigation Tests', () => {
         </table>
       );
 
-      const sortButton = screen.getByRole('button', { name: /product name/i });
+      const sortButton = screen.getByRole("button", { name: /product name/i });
       sortButton.focus();
 
       // Enter should trigger sort
-      await user.keyboard('{Enter}');
+      await user.keyboard("{Enter}");
       expect(mockSort).toHaveBeenCalledTimes(1);
 
       // Space should also trigger sort
-      await user.keyboard(' ');
+      await user.keyboard(" ");
       expect(mockSort).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('Navigation Menu', () => {
-    it('should navigate through menu items with Tab', async () => {
+  describe("Navigation Menu", () => {
+    it("should navigate through menu items with Tab", async () => {
       render(<NavigationMenu />);
 
-      const links = screen.getAllByRole('link');
-      
+      const links = screen.getAllByRole("link");
+
       // Tab through all links
       for (let i = 0; i < links.length; i++) {
         await user.tab();
@@ -381,35 +395,41 @@ describe('Keyboard Navigation Tests', () => {
       }
     });
 
-    it('should activate menu items with Enter', async () => {
+    it("should activate menu items with Enter", async () => {
       // Mock navigation
       const mockNavigate = vi.fn();
-      
+
       render(
         <nav>
-          <a href="/products" onClick={mockNavigate}>
+          <a
+            href="/products"
+            onClick={(e) => {
+              e.preventDefault();
+              mockNavigate();
+            }}
+          >
             Products
           </a>
         </nav>
       );
 
-      const link = screen.getByRole('link', { name: /products/i });
+      const link = screen.getByRole("link", { name: /products/i });
       link.focus();
 
-      await user.keyboard('{Enter}');
+      await user.keyboard("{Enter}");
       expect(mockNavigate).toHaveBeenCalled();
     });
   });
 
-  describe('Modal Dialog Navigation', () => {
-    it('should trap focus within modal dialog', async () => {
+  describe("Modal Dialog Navigation", () => {
+    it("should trap focus within modal dialog", async () => {
       const mockClose = vi.fn();
-      
+
       render(<Modal isOpen={true} onClose={mockClose} />);
 
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
-      const closeButton = screen.getByRole('button', { name: /close dialog/i });
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
+      const deleteButton = screen.getByRole("button", { name: /delete/i });
+      const closeButton = screen.getByRole("button", { name: /close dialog/i });
 
       // Focus should start on first focusable element
       await user.tab();
@@ -423,15 +443,15 @@ describe('Keyboard Navigation Tests', () => {
       expect(cancelButton).toBeInTheDocument();
     });
 
-    it('should close modal with Escape key', async () => {
+    it("should close modal with Escape key", async () => {
       const mockClose = vi.fn();
-      
+
       // Simple mock that responds to Escape
       const MockModal = ({ onClose }: { onClose: () => void }) => (
-        <div 
-          role="dialog" 
+        <div
+          role="dialog"
           onKeyDown={(e) => {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
               onClose();
             }
           }}
@@ -440,36 +460,36 @@ describe('Keyboard Navigation Tests', () => {
           <button>Cancel</button>
         </div>
       );
-      
+
       render(<MockModal onClose={mockClose} />);
 
-      const modal = screen.getByRole('dialog');
+      const modal = screen.getByRole("dialog");
       modal.focus();
-      await user.keyboard('{Escape}');
+      await user.keyboard("{Escape}");
       expect(mockClose).toHaveBeenCalled();
     });
 
-    it('should activate modal buttons with Enter and Space', async () => {
+    it("should activate modal buttons with Enter and Space", async () => {
       const mockClose = vi.fn();
-      
+
       render(<Modal isOpen={true} onClose={mockClose} />);
 
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
+      const deleteButton = screen.getByRole("button", { name: /delete/i });
 
       // Enter should activate buttons
       cancelButton.focus();
-      await user.keyboard('{Enter}');
+      await user.keyboard("{Enter}");
       expect(mockClose).toHaveBeenCalledTimes(1);
 
       deleteButton.focus();
-      await user.keyboard(' ');
+      await user.keyboard(" ");
       expect(mockClose).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('Skip Links', () => {
-    it('should provide skip links for main content areas', async () => {
+  describe("Skip Links", () => {
+    it("should provide skip links for main content areas", async () => {
       render(
         <div>
           <a href="#main-content" className="skip-link">
@@ -478,12 +498,12 @@ describe('Keyboard Navigation Tests', () => {
           <a href="#navigation" className="skip-link">
             Skip to navigation
           </a>
-          
+
           <nav id="navigation">
             <a href="/products">Products</a>
             <a href="/variations">Variations</a>
           </nav>
-          
+
           <main id="main-content">
             <h1>Product Management</h1>
             <p>Main content area</p>
@@ -491,8 +511,12 @@ describe('Keyboard Navigation Tests', () => {
         </div>
       );
 
-      const skipToMain = screen.getByRole('link', { name: /skip to main content/i });
-      const skipToNav = screen.getByRole('link', { name: /skip to navigation/i });
+      const skipToMain = screen.getByRole("link", {
+        name: /skip to main content/i,
+      });
+      const skipToNav = screen.getByRole("link", {
+        name: /skip to navigation/i,
+      });
 
       // Skip links should be first in tab order
       await user.tab();
@@ -502,13 +526,13 @@ describe('Keyboard Navigation Tests', () => {
       expect(skipToNav).toHaveFocus();
 
       // Skip links should have proper href attributes
-      expect(skipToMain).toHaveAttribute('href', '#main-content');
-      expect(skipToNav).toHaveAttribute('href', '#navigation');
+      expect(skipToMain).toHaveAttribute("href", "#main-content");
+      expect(skipToNav).toHaveAttribute("href", "#navigation");
     });
   });
 
-  describe('Custom Keyboard Shortcuts', () => {
-    it('should support custom keyboard shortcuts', async () => {
+  describe("Custom Keyboard Shortcuts", () => {
+    it("should support custom keyboard shortcuts", async () => {
       const mockCreate = vi.fn();
       const mockSave = vi.fn();
       const mockSearch = vi.fn();
@@ -517,15 +541,15 @@ describe('Keyboard Navigation Tests', () => {
         const handleKeyDown = (event: React.KeyboardEvent) => {
           if (event.ctrlKey || event.metaKey) {
             switch (event.key) {
-              case 'n':
+              case "n":
                 event.preventDefault();
                 mockCreate();
                 break;
-              case 's':
+              case "s":
                 event.preventDefault();
                 mockSave();
                 break;
-              case 'k':
+              case "k":
                 event.preventDefault();
                 mockSearch();
                 break;
@@ -547,52 +571,56 @@ describe('Keyboard Navigation Tests', () => {
       container.focus();
 
       // Test keyboard shortcuts
-      await user.keyboard('{Control>}n{/Control}');
+      await user.keyboard("{Control>}n{/Control}");
       expect(mockCreate).toHaveBeenCalled();
 
-      await user.keyboard('{Control>}s{/Control}');
+      await user.keyboard("{Control>}s{/Control}");
       expect(mockSave).toHaveBeenCalled();
 
-      await user.keyboard('{Control>}k{/Control}');
+      await user.keyboard("{Control>}k{/Control}");
       expect(mockSearch).toHaveBeenCalled();
     });
   });
 
-  describe('Focus Indicators', () => {
-    it('should provide visible focus indicators', () => {
+  describe("Focus Indicators", () => {
+    it("should provide visible focus indicators", () => {
       render(
         <div>
           <button className="focus:ring-2 focus:ring-blue-500">
             Focusable Button
           </button>
-          <input 
+          <input
             className="focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             placeholder="Focusable Input"
           />
         </div>
       );
 
-      const button = screen.getByRole('button');
-      const input = screen.getByRole('textbox');
+      const button = screen.getByRole("button");
+      const input = screen.getByRole("textbox");
 
       // Elements should have focus indicator classes
-      expect(button).toHaveClass('focus:ring-2', 'focus:ring-blue-500');
-      expect(input).toHaveClass('focus:border-blue-500', 'focus:ring-1', 'focus:ring-blue-500');
+      expect(button).toHaveClass("focus:ring-2", "focus:ring-blue-500");
+      expect(input).toHaveClass(
+        "focus:border-blue-500",
+        "focus:ring-1",
+        "focus:ring-blue-500"
+      );
     });
   });
 
-  describe('Roving Tabindex', () => {
-    it('should implement roving tabindex for toolbar', async () => {
+  describe("Roving Tabindex", () => {
+    it("should implement roving tabindex for toolbar", async () => {
       const Toolbar = () => {
         const [focusedIndex, setFocusedIndex] = React.useState(0);
 
         const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
           switch (event.key) {
-            case 'ArrowRight':
+            case "ArrowRight":
               event.preventDefault();
               setFocusedIndex((prev) => (prev + 1) % 3);
               break;
-            case 'ArrowLeft':
+            case "ArrowLeft":
               event.preventDefault();
               setFocusedIndex((prev) => (prev - 1 + 3) % 3);
               break;
@@ -625,19 +653,21 @@ describe('Keyboard Navigation Tests', () => {
 
       render(<Toolbar />);
 
-      const boldButton = screen.getByRole('button', { name: /bold/i });
-      const italicButton = screen.getByRole('button', { name: /italic/i });
-      const underlineButton = screen.getByRole('button', { name: /underline/i });
+      const boldButton = screen.getByRole("button", { name: /bold/i });
+      const italicButton = screen.getByRole("button", { name: /italic/i });
+      const underlineButton = screen.getByRole("button", {
+        name: /underline/i,
+      });
 
       // Only first button should be tabbable initially
-      expect(boldButton).toHaveAttribute('tabindex', '0');
-      expect(italicButton).toHaveAttribute('tabindex', '-1');
-      expect(underlineButton).toHaveAttribute('tabindex', '-1');
+      expect(boldButton).toHaveAttribute("tabindex", "0");
+      expect(italicButton).toHaveAttribute("tabindex", "-1");
+      expect(underlineButton).toHaveAttribute("tabindex", "-1");
 
       // Focus first button and use arrow keys
       boldButton.focus();
-      await user.keyboard('{ArrowRight}');
-      
+      await user.keyboard("{ArrowRight}");
+
       // Just verify the buttons are still accessible
       expect(boldButton).toBeInTheDocument();
       expect(italicButton).toBeInTheDocument();

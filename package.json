@@ -4,15 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NEXT_CACHE_DISABLED=1 next build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "coverage": "vitest --coverage",
+    "test": "VITE_CJS_IGNORE_WARNING=1 vitest",
+    "test:watch": "VITE_CJS_IGNORE_WARNING=1 vitest --watch",
+    "coverage": "VITE_CJS_IGNORE_WARNING=1 vitest --coverage",
     "prepare": "husky"
   },
   "dependencies": {

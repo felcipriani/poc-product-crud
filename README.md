@@ -13,7 +13,7 @@ A comprehensive Next.js-based product management system that handles complex pro
 - **Performance**: Optimized for large datasets with efficient caching and batch operations
 - **Security**: Built-in security headers, input validation, and XSS protection
 
-## 🚀 Quick Start
+## ⚙️ Setup
 
 ### Prerequisites
 
@@ -39,7 +39,19 @@ A comprehensive Next.js-based product management system that handles complex pro
    pnpm install
    ```
 
-3. **Start development server:**
+3. **Generate demo data (optional):**
+
+   ```bash
+   node scripts/seed.js
+   ```
+
+4. **Run tests to validate the environment:**
+
+   ```bash
+   npm test
+   ```
+
+5. **Start development server:**
 
    ```bash
    npm run dev
@@ -49,7 +61,7 @@ A comprehensive Next.js-based product management system that handles complex pro
    pnpm dev
    ```
 
-4. **Open your browser:**
+6. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 📚 Documentation
@@ -104,6 +116,14 @@ src/
 │   └── validations/            # Zod schemas
 └── tests/                      # Test utilities and factories
 ```
+
+### Complex Scenarios
+
+The platform supports advanced combinations of product features, including:
+
+- **Composite with Variations**: A product composed of other products while also offering color or size variations. Composition items are migrated when variations are enabled.
+- **Weight Overrides**: Variations can override base weights allowing precise shipping calculations.
+- **Deep Hierarchies**: Products can be nested multiple levels deep with automatic weight aggregation and validation of circular references.
 
 ### Technology Stack
 

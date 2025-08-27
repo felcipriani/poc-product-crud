@@ -1,9 +1,13 @@
-import { CompositionItem, CreateCompositionItemData, UpdateCompositionItemData } from '../entities/composition-item';
-import { Product } from '../entities/product';
-import { ProductVariationItem } from '../entities/product-variation-item';
-import { CompositionItemRepository } from '../../storage/repositories/composition-item-repository';
-import { ProductRepository } from '../../storage/repositories/product-repository';
-import { ProductVariationItemRepository } from '../../storage/repositories/product-variation-item-repository';
+import {
+  CompositionItem,
+  CreateCompositionItemData,
+  UpdateCompositionItemData,
+} from "../entities/composition-item";
+import { Product } from "../entities/product";
+import { ProductVariationItem } from "../entities/product-variation-item";
+import { CompositionItemRepository } from "../../storage/repositories/composition-item-repository";
+import { ProductRepository } from "../../storage/repositories/product-repository";
+import { ProductVariationItemRepository } from "../../storage/repositories/product-variation-item-repository";
 
 /**
  * Enhanced composition service with variation support
@@ -19,52 +23,70 @@ export class CompositionService {
     productRepository?: ProductRepository,
     variationItemRepository?: ProductVariationItemRepository
   ) {
-    this.compositionItemRepository = compositionItemRepository || new CompositionItemRepository();
+    this.compositionItemRepository =
+      compositionItemRepository || new CompositionItemRepository();
     this.productRepository = productRepository || new ProductRepository();
-    this.variationItemRepository = variationItemRepository || new ProductVariationItemRepository();
+    this.variationItemRepository =
+      variationItemRepository || new ProductVariationItemRepository();
   }
 
   /**
-   * Get composition items for a product
+   * Get composition items for a product.
+   *
+   * @param productSku - SKU of the parent product.
+   * @returns List of composition items belonging to the product.
    */
   async getCompositionItems(productSku: string): Promise<CompositionItem[]> {
     return this.compositionItemRepository.findByParent(productSku);
   }
 
   /**
-   * Get available items for composition
+   * Get products that can be used as children in a composition.
+   *
+   * @returns Array of simplified product descriptors available for composition.
    */
   async getCompositionAvailableItems(): Promise<any[]> {
     const allProducts = await this.productRepository.findAll();
     return allProducts
-      .filter(p => !p.isComposite || !p.hasVariation) // Only simple products or non-variable composites
-      .map(p => ({
+      .filter((p) => !p.isComposite || !p.hasVariation) // Only simple products or non-variable composites
+      .map((p) => ({
         id: p.sku,
         sku: p.sku,
         displayName: p.name,
         weight: p.weight,
-        type: p.isComposite ? 'composite' as const : 'simple' as const
+        type: p.isComposite ? ("composite" as const) : ("simple" as const),
       }));
   }
 
   /**
    * Calculate composite weight for a product
    */
-  async calculateCompositeWeight(productSku: string, options: any = {}): Promise<number> {
-    return this.compositionItemRepository.calculateCompositeWeight(productSku, options);
+  async calculateCompositeWeight(
+    productSku: string,
+    options: any = {}
+  ): Promise<number> {
+    return this.compositionItemRepository.calculateCompositeWeight(
+      productSku,
+      options
+    );
   }
 
   /**
    * Create a composition item
    */
-  async createCompositionItem(data: CreateCompositionItemData): Promise<CompositionItem> {
+  async createCompositionItem(
+    data: CreateCompositionItemData
+  ): Promise<CompositionItem> {
     return this.compositionItemRepository.create(data);
   }
 
   /**
    * Update a composition item
    */
-  async updateCompositionItem(id: string, data: UpdateCompositionItemData): Promise<CompositionItem> {
+  async updateCompositionItem(
+    id: string,
+    data: UpdateCompositionItemData
+  ): Promise<CompositionItem> {
     return this.compositionItemRepository.update(id, data);
   }
 
@@ -78,13 +100,19 @@ export class CompositionService {
   /**
    * Get composition tree for a product
    */
-  async getCompositionTree(productSku: string): Promise<CompositionTreeNode | null> {
+  async getCompositionTree(
+    productSku: string
+  ): Promise<CompositionTreeNode | null> {
     try {
       const compositionItems = await this.getCompositionItems(productSku);
       const products = await this.productRepository.findAll();
-      return CompositionService.buildCompositionTree(productSku, compositionItems, products);
+      return CompositionService.buildCompositionTree(
+        productSku,
+        compositionItems,
+        products
+      );
     } catch (err) {
-      console.error('Error building composition tree:', err);
+      console.error("Error building composition tree:", err);
       return null;
     }
   }
@@ -96,18 +124,18 @@ export class CompositionService {
     try {
       const compositionItems = await this.getCompositionItems(productSku);
       const products = await this.productRepository.findAll();
-      
+
       return CompositionService.validateVariationComposition(
         productSku,
-        'default',
+        "default",
         compositionItems,
         products
       );
     } catch (err) {
-      console.error('Error validating composition complexity:', err);
+      console.error("Error validating composition complexity:", err);
       return {
         valid: false,
-        errors: ['Failed to validate composition complexity']
+        errors: ["Failed to validate composition complexity"],
       };
     }
   }
@@ -131,9 +159,9 @@ export class CompositionService {
     // If product is composite, calculate from composition items
     if (product.isComposite && compositionItems.length > 0) {
       return compositionItems.reduce((total, item) => {
-        const childProduct = childProducts.find(p => p.sku === item.childSku);
+        const childProduct = childProducts.find((p) => p.sku === item.childSku);
         const childWeight = childProduct?.weight || 0;
-        return total + (childWeight * item.quantity);
+        return total + childWeight * item.quantity;
       }, 0);
     }
 
@@ -158,12 +186,14 @@ export class CompositionService {
     // If product is composite, calculate from variation's composition items
     if (product.isComposite) {
       const variationSku = `${product.sku}#${variation.id}`;
-      const variationItems = compositionItems.filter(item => item.parentSku === variationSku);
-      
+      const variationItems = compositionItems.filter(
+        (item) => item.parentSku === variationSku
+      );
+
       return variationItems.reduce((total, item) => {
-        const childProduct = childProducts.find(p => p.sku === item.childSku);
+        const childProduct = childProducts.find((p) => p.sku === item.childSku);
         const childWeight = childProduct?.weight || 0;
-        return total + (childWeight * item.quantity);
+        return total + childWeight * item.quantity;
       }, 0);
     }
 
@@ -182,38 +212,51 @@ export class CompositionService {
     const errors: string[] = [];
 
     // Check if child product exists
-    const childProduct = availableProducts.find(p => p.sku === itemData.childSku);
+    const childProduct = availableProducts.find(
+      (p) => p.sku === itemData.childSku
+    );
     if (!childProduct) {
       errors.push(`Product with SKU "${itemData.childSku}" not found`);
     }
 
     // Check for duplicate child SKU in same parent
-    const duplicate = existingItems.find(item => 
-      item.parentSku === itemData.parentSku && 
-      item.childSku === itemData.childSku
+    const duplicate = existingItems.find(
+      (item) =>
+        item.parentSku === itemData.parentSku &&
+        item.childSku === itemData.childSku
     );
     if (duplicate) {
-      errors.push(`Product "${itemData.childSku}" is already in this composition`);
+      errors.push(
+        `Product "${itemData.childSku}" is already in this composition`
+      );
     }
 
     // Validate quantity
     if (itemData.quantity <= 0) {
-      errors.push('Quantity must be greater than zero');
+      errors.push("Quantity must be greater than zero");
     }
 
     // Check for circular dependencies
-    if (this.wouldCreateCircularDependency(itemData.parentSku, itemData.childSku, existingItems)) {
-      errors.push('This would create a circular dependency');
+    if (
+      this.wouldCreateCircularDependency(
+        itemData.parentSku,
+        itemData.childSku,
+        existingItems
+      )
+    ) {
+      errors.push("This would create a circular dependency");
     }
 
     // Check if child product has variations (should use specific variation SKU)
-    if (childProduct?.hasVariation && !itemData.childSku.includes('#')) {
-      errors.push(`Product "${itemData.childSku}" has variations. Please select a specific variation.`);
+    if (childProduct?.hasVariation && !itemData.childSku.includes("#")) {
+      errors.push(
+        `Product "${itemData.childSku}" has variations. Please select a specific variation.`
+      );
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -226,8 +269,8 @@ export class CompositionService {
     existingItems: CompositionItem[]
   ): boolean {
     // Extract base SKU (remove variation suffix if present)
-    const baseParentSku = parentSku.split('#')[0];
-    const baseChildSku = childSku.split('#')[0];
+    const baseParentSku = parentSku.split("#")[0];
+    const baseChildSku = childSku.split("#")[0];
 
     // Direct circular dependency
     if (baseParentSku === baseChildSku) {
@@ -235,18 +278,24 @@ export class CompositionService {
     }
 
     // Indirect circular dependency - check if parent is used as child somewhere in child's composition
-    const childCompositionItems = existingItems.filter(item => 
+    const childCompositionItems = existingItems.filter((item) =>
       item.parentSku.startsWith(baseChildSku)
     );
 
     for (const item of childCompositionItems) {
-      const itemBaseSku = item.childSku.split('#')[0];
+      const itemBaseSku = item.childSku.split("#")[0];
       if (itemBaseSku === baseParentSku) {
         return true;
       }
-      
+
       // Recursive check
-      if (this.wouldCreateCircularDependency(baseParentSku, item.childSku, existingItems)) {
+      if (
+        this.wouldCreateCircularDependency(
+          baseParentSku,
+          item.childSku,
+          existingItems
+        )
+      ) {
         return true;
       }
     }
@@ -263,12 +312,18 @@ export class CompositionService {
     products: Product[],
     maxDepth: number = 5
   ): CompositionTreeNode {
-    const product = products.find(p => p.sku === productSku);
+    const product = products.find((p) => p.sku === productSku);
     if (!product) {
       throw new Error(`Product not found: ${productSku}`);
     }
 
-    return this.buildCompositionTreeRecursive(productSku, compositionItems, products, 0, maxDepth);
+    return this.buildCompositionTreeRecursive(
+      productSku,
+      compositionItems,
+      products,
+      0,
+      maxDepth
+    );
   }
 
   private static buildCompositionTreeRecursive(
@@ -278,7 +333,7 @@ export class CompositionService {
     currentDepth: number,
     maxDepth: number
   ): CompositionTreeNode {
-    const product = products.find(p => p.sku === productSku);
+    const product = products.find((p) => p.sku === productSku);
     if (!product) {
       throw new Error(`Product not found: ${productSku}`);
     }
@@ -288,7 +343,7 @@ export class CompositionService {
       name: product.name,
       weight: product.weight || 0,
       quantity: 1,
-      children: []
+      children: [],
     };
 
     // Prevent infinite recursion
@@ -297,8 +352,10 @@ export class CompositionService {
     }
 
     // Get composition items for this product
-    const items = compositionItems.filter(item => item.parentSku === productSku);
-    
+    const items = compositionItems.filter(
+      (item) => item.parentSku === productSku
+    );
+
     for (const item of items) {
       const childNode = this.buildCompositionTreeRecursive(
         item.childSku,
@@ -307,7 +364,7 @@ export class CompositionService {
         currentDepth + 1,
         maxDepth
       );
-      
+
       childNode.quantity = item.quantity;
       node.children.push(childNode);
     }
@@ -320,11 +377,11 @@ export class CompositionService {
    */
   static calculateTreeWeight(tree: CompositionTreeNode): number {
     let totalWeight = tree.weight * tree.quantity;
-    
+
     for (const child of tree.children) {
       totalWeight += this.calculateTreeWeight(child);
     }
-    
+
     return totalWeight;
   }
 
@@ -339,11 +396,13 @@ export class CompositionService {
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const variationSku = `${productSku}#${variationId}`;
-    const variationItems = compositionItems.filter(item => item.parentSku === variationSku);
+    const variationItems = compositionItems.filter(
+      (item) => item.parentSku === variationSku
+    );
 
     // Check minimum items requirement
     if (variationItems.length === 0) {
-      errors.push('Variation must have at least one composition item');
+      errors.push("Variation must have at least one composition item");
     }
 
     // Validate each item
@@ -352,9 +411,9 @@ export class CompositionService {
         {
           parentSku: item.parentSku,
           childSku: item.childSku,
-          quantity: item.quantity
+          quantity: item.quantity,
         },
-        variationItems.filter(vi => vi.id !== item.id),
+        variationItems.filter((vi) => vi.id !== item.id),
         products
       );
 
@@ -365,7 +424,7 @@ export class CompositionService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

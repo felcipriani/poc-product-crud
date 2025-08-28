@@ -1,15 +1,35 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useOptimisticMutation, useOptimisticList } from '@/hooks/use-optimistic-mutation';
-import { CreateProductData, UpdateProductData, Product } from '@/lib/domain/entities/product';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import {
+  useOptimisticMutation,
+  useOptimisticList,
+} from "@/hooks/use-optimistic-mutation";
+import {
+  CreateProductData,
+  UpdateProductData,
+  Product,
+} from "@/lib/domain/entities/product";
 
 // Mock toast notifications
-vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({
-    toast: vi.fn(),
-  }),
-  toast: vi.fn(),
-}));
+vi.mock("@/hooks/use-toast", () => {
+  const toast = {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
+  return {
+    toast,
+    useToast: () => ({
+      toasts: [],
+      addToast: vi.fn(),
+      removeToast: vi.fn(),
+      clearAllToasts: vi.fn(),
+      ...toast,
+      toast: vi.fn(),
+    }),
+  };
+});
 
 // Mock localStorage
 const localStorageMock = {
@@ -19,22 +39,22 @@ const localStorageMock = {
   clear: vi.fn(),
 };
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-describe('Optimistic Updates Integration', () => {
+describe("Optimistic Updates Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorageMock.getItem.mockReturnValue('{}');
+    localStorageMock.getItem.mockReturnValue("{}");
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useOptimisticMutation Hook', () => {
-    it('should apply optimistic updates immediately', async () => {
+  describe("useOptimisticMutation Hook", () => {
+    it("should apply optimistic updates immediately", async () => {
       const initialData = { count: 0 };
       const mockMutation = vi.fn().mockResolvedValue({ count: 1 });
 
@@ -73,9 +93,11 @@ describe('Optimistic Updates Integration', () => {
       expect(mockMutation).toHaveBeenCalledWith({ increment: 1 });
     });
 
-    it('should rollback optimistic updates on error', async () => {
+    it("should rollback optimistic updates on error", async () => {
       const initialData = { count: 0 };
-      const mockMutation = vi.fn().mockRejectedValue(new Error('Mutation failed'));
+      const mockMutation = vi
+        .fn()
+        .mockRejectedValue(new Error("Mutation failed"));
 
       const { result } = renderHook(() =>
         useOptimisticMutation(initialData, {
@@ -105,9 +127,10 @@ describe('Optimistic Updates Integration', () => {
       expect(result.current.error).toBeInstanceOf(Error);
     });
 
-    it('should handle multiple concurrent optimistic updates', async () => {
+    it("should handle multiple concurrent optimistic updates", async () => {
       const initialData = { count: 0 };
-      const mockMutation = vi.fn()
+      const mockMutation = vi
+        .fn()
         .mockResolvedValueOnce({ count: 1 })
         .mockResolvedValueOnce({ count: 2 });
 
@@ -149,11 +172,11 @@ describe('Optimistic Updates Integration', () => {
     });
   });
 
-  describe('useOptimisticList Hook', () => {
-    it('should handle list operations optimistically', () => {
+  describe("useOptimisticList Hook", () => {
+    it("should handle list operations optimistically", () => {
       const initialItems = [
-        { id: '1', name: 'Item 1' },
-        { id: '2', name: 'Item 2' },
+        { id: "1", name: "Item 1" },
+        { id: "2", name: "Item 2" },
       ];
 
       const { result } = renderHook(() =>
@@ -165,27 +188,32 @@ describe('Optimistic Updates Integration', () => {
 
       // Add item optimistically
       act(() => {
-        result.current.addOptimistic({ id: '3', name: 'Item 3' });
+        result.current.addOptimistic({ id: "3", name: "Item 3" });
       });
 
       expect(result.current.items).toHaveLength(3);
-      expect(result.current.items[2]).toEqual({ id: '3', name: 'Item 3' });
+      expect(result.current.items[2]).toEqual({ id: "3", name: "Item 3" });
       expect(result.current.hasPendingChanges).toBe(true);
 
       // Update item optimistically
       act(() => {
-        result.current.updateOptimistic('1', { name: 'Updated Item 1' });
+        result.current.updateOptimistic("1", { name: "Updated Item 1" });
       });
 
-      expect(result.current.items[0]).toEqual({ id: '1', name: 'Updated Item 1' });
+      expect(result.current.items[0]).toEqual({
+        id: "1",
+        name: "Updated Item 1",
+      });
 
       // Remove item optimistically
       act(() => {
-        result.current.removeOptimistic('2');
+        result.current.removeOptimistic("2");
       });
 
       expect(result.current.items).toHaveLength(2);
-      expect(result.current.items.find(item => item.id === '2')).toBeUndefined();
+      expect(
+        result.current.items.find((item) => item.id === "2")
+      ).toBeUndefined();
 
       // Commit changes
       act(() => {
@@ -195,10 +223,10 @@ describe('Optimistic Updates Integration', () => {
       expect(result.current.hasPendingChanges).toBe(false);
     });
 
-    it('should rollback list changes on error', () => {
+    it("should rollback list changes on error", () => {
       const initialItems = [
-        { id: '1', name: 'Item 1' },
-        { id: '2', name: 'Item 2' },
+        { id: "1", name: "Item 1" },
+        { id: "2", name: "Item 2" },
       ];
 
       const { result } = renderHook(() =>
@@ -207,13 +235,13 @@ describe('Optimistic Updates Integration', () => {
 
       // Make several optimistic changes
       act(() => {
-        result.current.addOptimistic({ id: '3', name: 'Item 3' });
-        result.current.updateOptimistic('1', { name: 'Updated Item 1' });
-        result.current.removeOptimistic('2');
+        result.current.addOptimistic({ id: "3", name: "Item 3" });
+        result.current.updateOptimistic("1", { name: "Updated Item 1" });
+        result.current.removeOptimistic("2");
       });
 
       expect(result.current.items).toHaveLength(2);
-      expect(result.current.items[0].name).toBe('Updated Item 1');
+      expect(result.current.items[0].name).toBe("Updated Item 1");
       expect(result.current.hasPendingChanges).toBe(true);
 
       // Rollback all changes
@@ -226,17 +254,17 @@ describe('Optimistic Updates Integration', () => {
     });
   });
 
-  describe('Product Management with Optimistic Updates', () => {
-    it('should create products optimistically using service layer', () => {
-      const { result } = renderHook(() => 
+  describe("Product Management with Optimistic Updates", () => {
+    it("should create products optimistically using service layer", () => {
+      const { result } = renderHook(() =>
         useOptimisticList<Product, string>([], (product) => product.sku)
       );
 
       expect(result.current.items).toHaveLength(0);
 
       const productData: Product = {
-        sku: 'TEST-001',
-        name: 'Test Product',
+        sku: "TEST-001",
+        name: "Test Product",
         isComposite: false,
         hasVariation: false,
         createdAt: new Date(),
@@ -249,79 +277,87 @@ describe('Optimistic Updates Integration', () => {
       });
 
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].sku).toBe('TEST-001');
-      expect(result.current.items[0].name).toBe('Test Product');
+      expect(result.current.items[0].sku).toBe("TEST-001");
+      expect(result.current.items[0].name).toBe("Test Product");
       expect(result.current.hasPendingChanges).toBe(true);
 
       // Commit the change
       act(() => {
         result.current.commit();
       });
-      
+
       expect(result.current.hasPendingChanges).toBe(false);
     });
 
-    it('should update products optimistically using service layer', () => {
+    it("should update products optimistically using service layer", () => {
       const existingProduct: Product = {
-        sku: 'TEST-001',
-        name: 'Original Product',
+        sku: "TEST-001",
+        name: "Original Product",
         isComposite: false,
         hasVariation: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      const { result } = renderHook(() => 
-        useOptimisticList<Product, string>([existingProduct], (product) => product.sku)
+      const { result } = renderHook(() =>
+        useOptimisticList<Product, string>(
+          [existingProduct],
+          (product) => product.sku
+        )
       );
 
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].name).toBe('Original Product');
+      expect(result.current.items[0].name).toBe("Original Product");
 
       // Apply optimistic update
       act(() => {
-        result.current.updateOptimistic('TEST-001', { name: 'Updated Product' });
+        result.current.updateOptimistic("TEST-001", {
+          name: "Updated Product",
+        });
       });
 
-      expect(result.current.items[0].name).toBe('Updated Product');
+      expect(result.current.items[0].name).toBe("Updated Product");
       expect(result.current.hasPendingChanges).toBe(true);
     });
 
-    it('should delete products optimistically using service layer', () => {
+    it("should delete products optimistically using service layer", () => {
       const existingProduct: Product = {
-        sku: 'TEST-001',
-        name: 'Test Product',
+        sku: "TEST-001",
+        name: "Test Product",
         isComposite: false,
         hasVariation: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      const { result } = renderHook(() => 
-        useOptimisticList<Product, string>([existingProduct], (product) => product.sku)
+      const { result } = renderHook(() =>
+        useOptimisticList<Product, string>(
+          [existingProduct],
+          (product) => product.sku
+        )
       );
 
       expect(result.current.items).toHaveLength(1);
 
       // Apply optimistic delete
       act(() => {
-        result.current.removeOptimistic('TEST-001');
+        result.current.removeOptimistic("TEST-001");
       });
 
       expect(result.current.items).toHaveLength(0);
       expect(result.current.hasPendingChanges).toBe(true);
     });
 
-    it('should rollback failed product operations using service layer', () => {
-      const { result } = renderHook(() => 
+    it("should rollback failed product operations using service layer", () => {
+      const { result } = renderHook(() =>
         useOptimisticList<Product, string>([], (product) => product.sku)
       );
 
       expect(result.current.items).toHaveLength(0);
 
       const productData: Product = {
-        sku: 'TEST-001',
-        name: 'Test Product',
+        sku: "TEST-001",
+        name: "Test Product",
         isComposite: false,
         hasVariation: false,
         createdAt: new Date(),
@@ -332,33 +368,31 @@ describe('Optimistic Updates Integration', () => {
       act(() => {
         result.current.addOptimistic(productData);
       });
-      
+
       expect(result.current.items).toHaveLength(1);
 
       // Simulate failure and rollback
       act(() => {
         result.current.rollback();
       });
-      
+
       expect(result.current.items).toHaveLength(0);
       expect(result.current.hasPendingChanges).toBe(false);
     });
   });
 
-  describe('Complex Optimistic Update Scenarios', () => {
-    it('should handle nested optimistic updates', async () => {
+  describe("Complex Optimistic Update Scenarios", () => {
+    it("should handle nested optimistic updates", async () => {
       const initialData = {
-        products: [
-          { sku: 'PROD-1', name: 'Product 1', variations: [] },
-        ],
+        products: [{ sku: "PROD-1", name: "Product 1", variations: [] }],
       };
 
       const mockMutation = vi.fn().mockResolvedValue({
         products: [
-          { 
-            sku: 'PROD-1', 
-            name: 'Product 1', 
-            variations: [{ id: 'VAR-1', name: 'Variation 1' }] 
+          {
+            sku: "PROD-1",
+            name: "Product 1",
+            variations: [{ id: "VAR-1", name: "Variation 1" }],
           },
         ],
       });
@@ -367,9 +401,12 @@ describe('Optimistic Updates Integration', () => {
         useOptimisticMutation(initialData, {
           mutationFn: mockMutation,
           onOptimisticUpdate: (variables, currentData) => ({
-            products: currentData.products.map(product =>
+            products: currentData.products.map((product) =>
               product.sku === variables.productSku
-                ? { ...product, variations: [...product.variations, variables.variation] }
+                ? {
+                    ...product,
+                    variations: [...product.variations, variables.variation],
+                  }
                 : product
             ),
           }),
@@ -381,14 +418,16 @@ describe('Optimistic Updates Integration', () => {
       // Add variation optimistically
       act(() => {
         result.current.mutate({
-          productSku: 'PROD-1',
-          variation: { id: 'VAR-1', name: 'Variation 1' },
+          productSku: "PROD-1",
+          variation: { id: "VAR-1", name: "Variation 1" },
         });
       });
 
       // Should immediately show the variation
       expect(result.current.data.products[0].variations).toHaveLength(1);
-      expect(result.current.data.products[0].variations[0].name).toBe('Variation 1');
+      expect(result.current.data.products[0].variations[0].name).toBe(
+        "Variation 1"
+      );
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -398,26 +437,22 @@ describe('Optimistic Updates Integration', () => {
       expect(result.current.data.products[0].variations).toHaveLength(1);
     });
 
-    it('should handle optimistic updates with dependencies', async () => {
+    it("should handle optimistic updates with dependencies", async () => {
       const initialData = {
-        products: [
-          { sku: 'PROD-1', name: 'Product 1', compositionItems: [] },
-        ],
-        inventory: [
-          { sku: 'COMP-1', quantity: 10 },
-        ],
+        products: [{ sku: "PROD-1", name: "Product 1", compositionItems: [] }],
+        inventory: [{ sku: "COMP-1", quantity: 10 }],
       };
 
       const mockMutation = vi.fn().mockResolvedValue({
         products: [
-          { 
-            sku: 'PROD-1', 
-            name: 'Product 1', 
-            compositionItems: [{ sku: 'COMP-1', quantity: 2 }] 
+          {
+            sku: "PROD-1",
+            name: "Product 1",
+            compositionItems: [{ sku: "COMP-1", quantity: 2 }],
           },
         ],
         inventory: [
-          { sku: 'COMP-1', quantity: 8 }, // Reduced by 2
+          { sku: "COMP-1", quantity: 8 }, // Reduced by 2
         ],
       });
 
@@ -425,17 +460,24 @@ describe('Optimistic Updates Integration', () => {
         useOptimisticMutation(initialData, {
           mutationFn: mockMutation,
           onOptimisticUpdate: (variables, currentData) => ({
-            products: currentData.products.map(product =>
+            products: currentData.products.map((product) =>
               product.sku === variables.productSku
-                ? { 
-                    ...product, 
-                    compositionItems: [...product.compositionItems, variables.compositionItem] 
+                ? {
+                    ...product,
+                    compositionItems: [
+                      ...product.compositionItems,
+                      variables.compositionItem,
+                    ],
                   }
                 : product
             ),
-            inventory: currentData.inventory.map(item =>
+            inventory: currentData.inventory.map((item) =>
               item.sku === variables.compositionItem.sku
-                ? { ...item, quantity: item.quantity - variables.compositionItem.quantity }
+                ? {
+                    ...item,
+                    quantity:
+                      item.quantity - variables.compositionItem.quantity,
+                  }
                 : item
             ),
           }),
@@ -447,8 +489,8 @@ describe('Optimistic Updates Integration', () => {
       // Add composition item optimistically
       act(() => {
         result.current.mutate({
-          productSku: 'PROD-1',
-          compositionItem: { sku: 'COMP-1', quantity: 2 },
+          productSku: "PROD-1",
+          compositionItem: { sku: "COMP-1", quantity: 2 },
         });
       });
 
@@ -466,10 +508,10 @@ describe('Optimistic Updates Integration', () => {
     });
   });
 
-  describe('Performance with Optimistic Updates', () => {
-    it('should handle rapid optimistic updates efficiently', () => {
+  describe("Performance with Optimistic Updates", () => {
+    it("should handle rapid optimistic updates efficiently", () => {
       const initialItems: Array<{ id: string; value: number }> = [];
-      
+
       const { result } = renderHook(() =>
         useOptimisticList(initialItems, (item) => item.id)
       );
@@ -490,7 +532,7 @@ describe('Optimistic Updates Integration', () => {
       expect(duration).toBeLessThan(100); // Should complete in less than 100ms
     });
 
-    it('should not cause memory leaks with frequent updates', () => {
+    it("should not cause memory leaks with frequent updates", () => {
       const initialData = { counter: 0 };
       const mockMutation = vi.fn().mockResolvedValue({ counter: 1 });
 

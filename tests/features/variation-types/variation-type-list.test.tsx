@@ -11,9 +11,25 @@ vi.mock("@/features/variation-types/hooks/use-variation-types", () => ({
 }));
 
 // Mock the toast hook
-vi.mock("@/hooks/use-toast", () => ({
-  toast: vi.fn(),
-}));
+vi.mock("@/hooks/use-toast", () => {
+  const toast = {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
+  return {
+    toast,
+    useToast: () => ({
+      toasts: [],
+      addToast: vi.fn(),
+      removeToast: vi.fn(),
+      clearAllToasts: vi.fn(),
+      ...toast,
+      toast: vi.fn(),
+    }),
+  };
+});
 
 const mockUseVariationTypes = useVariationTypes as vi.MockedFunction<
   typeof useVariationTypes

@@ -84,25 +84,6 @@ export function ProductManagement() {
     await deleteProduct(sku);
   };
 
-  if (viewMode === "list") {
-    return (
-      <ProductList
-        products={products}
-        loading={loading}
-        onCreateProduct={handleCreateProduct}
-        onEditProduct={handleEditProduct}
-        onDeleteProduct={handleDeleteProduct}
-        onSearch={handleSearch}
-        onFilterChange={handleFilterChange}
-        searchQuery={filters.search || ""}
-        filters={{
-          isComposite: filters.isComposite,
-          hasVariation: filters.hasVariation,
-        }}
-      />
-    );
-  }
-
   if (viewMode === "edit" && selectedProduct) {
     return (
       <ProductEditTabs
@@ -119,23 +100,40 @@ export function ProductManagement() {
   }
 
   return (
-    <LegacyModal
-      open={viewMode === "create"}
-      onOpenChange={(open) => {
-        if (!open) {
-          handleFormCancel();
-        }
-      }}
-      title="Create Product"
-      description="Add a new product to your catalog"
-      size="lg"
-    >
-      <ProductForm
-        product={undefined}
-        onSubmit={handleFormSubmit}
-        onCancel={handleFormCancel}
-        loading={formLoading}
+    <>
+      <ProductList
+        products={products}
+        loading={loading}
+        onCreateProduct={handleCreateProduct}
+        onEditProduct={handleEditProduct}
+        onDeleteProduct={handleDeleteProduct}
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
+        searchQuery={filters.search || ""}
+        filters={{
+          isComposite: filters.isComposite,
+          hasVariation: filters.hasVariation,
+        }}
       />
-    </LegacyModal>
+
+      <LegacyModal
+        open={viewMode === "create"}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleFormCancel();
+          }
+        }}
+        title="Create Product"
+        description="Add a new product to your catalog"
+        size="lg"
+      >
+        <ProductForm
+          product={undefined}
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          loading={formLoading}
+        />
+      </LegacyModal>
+    </>
   );
 }

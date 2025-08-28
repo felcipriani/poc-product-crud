@@ -2,7 +2,7 @@
 # Optimized for production deployment
 
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage

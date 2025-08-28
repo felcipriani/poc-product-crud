@@ -368,22 +368,26 @@ export function ProductForm({
                 Additional Configuration Required:
               </p>
               <ul className="list-disc list-inside space-y-1">
-                {isComposite && (
+                {isComposite && hasVariation ? (
                   <li>
-                    Configure composition items in the Composition tab after
-                    saving
+                    Configure composition and variations in the unified
+                    Composition tab after saving
                   </li>
-                )}
-                {hasVariation && (
-                  <li>
-                    Configure product variations in the Variations tab after
-                    saving
-                  </li>
-                )}
-                {isComposite && hasVariation && (
-                  <li>
-                    This product will use composition-based variation interface
-                  </li>
+                ) : (
+                  <>
+                    {isComposite && (
+                      <li>
+                        Configure composition items in the Composition tab after
+                        saving
+                      </li>
+                    )}
+                    {hasVariation && (
+                      <li>
+                        Configure product variations in the Variations tab after
+                        saving
+                      </li>
+                    )}
+                  </>
                 )}
               </ul>
             </div>

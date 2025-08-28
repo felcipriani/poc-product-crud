@@ -136,26 +136,26 @@ export function ProductList({
       key: "sku",
       label: "SKU",
       sortable: true,
-      className: "font-mono text-sm",
-      style: { width: "10%" },
+      className: "font-mono text-xs",
+      style: { width: "12%" },
     },
     {
       key: "name",
       label: "Product Name",
       sortable: true,
-      className: "font-medium text-sm",
+      className: "font-medium text-xs",
       style: { width: "25%" },
     },
     {
       key: "weight",
       label: "Weight (kg)",
       sortable: true,
-      className: "text-sm",
+      className: "text-xs hidden xl:table-cell",
       style: { width: "10%" },
       render: (value, row) => {
         if (row.isComposite) {
           return (
-            <span className="text-muted-foreground italic text-sm">
+            <span className="text-muted-foreground italic text-xs">
               Calculated
             </span>
           );
@@ -166,7 +166,7 @@ export function ProductList({
     {
       key: "dimensions",
       label: "Dimensions (cm)",
-      className: "text-sm",
+      className: "text-xs hidden 2xl:table-cell",
       style: { width: "15%" },
       render: (value) => {
         if (!value) return "—";
@@ -181,8 +181,8 @@ export function ProductList({
     {
       key: "isComposite",
       label: "Type",
-      className: "text-sm",
-      style: { width: "20%" },
+      className: "text-xs hidden md:table-cell",
+      style: { width: "18%" },
       render: (_, row) => (
         <div className="flex items-center gap-2">
           {row.isComposite && (
@@ -210,15 +210,15 @@ export function ProductList({
       key: "createdAt",
       label: "Created",
       sortable: true,
-      className: "text-sm",
+      className: "text-xs hidden lg:table-cell",
       style: { width: "10%" },
       render: (value) => new Date(value as Date).toLocaleDateString(),
     },
     {
       key: "actions" as keyof Product,
       label: "Actions",
-      className: "text-sm text-center [&>*]:flex [&>*]:justify-center",
-      style: { width: "15%", textAlign: "center" },
+      className: "text-xs text-center [&>*]:flex [&>*]:justify-center",
+      style: { width: "10%", textAlign: "center" },
       render: (_, row) => (
         <div className="flex justify-center space-x-1">
           <Button
@@ -312,9 +312,7 @@ export function ProductList({
         onSort={handleSort}
         loading={loading}
         emptyMessage="No products found. Create your first product to get started."
-        caption="Product catalog with search and filtering capabilities"
         rowKey={(row) => row.sku}
-        virtualized
       />
 
       {/* Delete Confirmation Modal */}

@@ -1,16 +1,20 @@
-import { v4 as uuidv4 } from 'uuid';
-import { BaseRepository } from './base-repository';
-import { STORAGE_KEYS } from '../storage-service';
+import { v4 as uuidv4 } from "uuid";
+import { BaseRepository } from "./base-repository";
+import { STORAGE_KEYS } from "../storage-service";
 import {
   Product,
   ProductSchema,
   CreateProductData,
   UpdateProductData,
-} from '../../domain/entities/product';
+} from "../../domain/entities/product";
 
-export class ProductRepository extends BaseRepository<Product, CreateProductData, UpdateProductData> {
+export class ProductRepository extends BaseRepository<
+  Product,
+  CreateProductData,
+  UpdateProductData
+> {
   protected storageKey = STORAGE_KEYS.PRODUCTS;
-  protected entityName = 'Product';
+  protected entityName = "Product";
 
   protected getId(entity: Product): string {
     return entity.sku;
@@ -65,10 +69,16 @@ export class ProductRepository extends BaseRepository<Product, CreateProductData
     hasVariation?: boolean;
   }): Promise<Product[]> {
     return this.findWhere((product) => {
-      if (filters.isComposite !== undefined && product.isComposite !== filters.isComposite) {
+      if (
+        filters.isComposite !== undefined &&
+        product.isComposite !== filters.isComposite
+      ) {
         return false;
       }
-      if (filters.hasVariation !== undefined && product.hasVariation !== filters.hasVariation) {
+      if (
+        filters.hasVariation !== undefined &&
+        product.hasVariation !== filters.hasVariation
+      ) {
         return false;
       }
       return true;
@@ -115,8 +125,8 @@ export class ProductRepository extends BaseRepository<Product, CreateProductData
     }
 
     // Ensure no SKU is being passed in update data (defensive programming)
-    if ('sku' in data) {
-      throw new Error('SKU cannot be modified during update');
+    if ("sku" in data) {
+      throw new Error("SKU cannot be modified during update");
     }
 
     const updatedProduct = { ...existingProduct, ...data };
@@ -149,24 +159,40 @@ export class ProductRepository extends BaseRepository<Product, CreateProductData
    * Gets simple products (no variations, not composite)
    */
   async findSimple(): Promise<Product[]> {
-    return this.findWhere((product) => !product.hasVariation && !product.isComposite);
+    return this.findWhere(
+      (product) => !product.hasVariation && !product.isComposite
+    );
   }
 
   /**
    * Validates that a product can be deleted
    */
   async validateForDeletion(sku: string): Promise<void> {
-    // This would check for references in compositions and variations
-    // For now, we'll implement basic validation
     const product = await this.findBySku(sku);
     if (!product) {
       throw new Error(`Product with SKU '${sku}' not found`);
     }
+  }
 
-    // Additional validation would be added here to check:
-    // - If product is used in any compositions
-    // - If product has variation items
-    // These checks would require access to other repositories
+  /**
+   * Deletes related data for a product (compositions and variations)
+   */
+  private async deleteRelatedData(sku: string): Promise<void> {
+    const { CompositionItemRepository } = await import(
+      "./composition-item-repository"
+    );
+    const { ProductVariationItemRepository } = await import(
+      "./product-variation-item-repository"
+    );
+
+    const compositionRepo = new CompositionItemRepository();
+    const variationRepo = new ProductVariationItemRepository();
+
+    // Delete all compositions where this product is the parent
+    await compositionRepo.deleteByParent(sku);
+
+    // Delete all variations for this product
+    await variationRepo.deleteByProduct(sku);
   }
 
   /**
@@ -197,10 +223,11 @@ export class ProductRepository extends BaseRepository<Product, CreateProductData
   }
 
   /**
-   * Deletes a product with validation
+   * Deletes a product with validation and cascade deletion
    */
   async delete(sku: string): Promise<void> {
     await this.validateForDeletion(sku);
+    await this.deleteRelatedData(sku);
     await super.delete(sku);
     await this.updateMetadata();
   }

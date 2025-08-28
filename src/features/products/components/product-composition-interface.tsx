@@ -230,6 +230,16 @@ export function ProductCompositionInterface({
         </div>
       )}
 
+      {/* Add Component Button (when header is hidden) */}
+      {!showHeader && (
+        <div className="flex justify-end">
+          <Button onClick={() => setShowAddModal(true)} disabled={loading}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Component
+          </Button>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="rounded-md bg-red-50 p-4">

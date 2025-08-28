@@ -4,7 +4,11 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Product, CreateProductData, UpdateProductData } from "@/lib/domain/entities/product";
+import {
+  Product,
+  CreateProductData,
+  UpdateProductData,
+} from "@/lib/domain/entities/product";
 import { DimensionsSchema } from "@/lib/domain/value-objects/dimensions";
 import { Button } from "@/components/ui/button";
 import { FormInput } from "@/components/shared/forms/form-input";
@@ -19,7 +23,10 @@ const ProductFormSchema = z.object({
     .string()
     .min(1, "SKU is required")
     .max(50, "SKU must be 50 characters or less")
-    .regex(/^[A-Z0-9-]+$/, "SKU must contain only uppercase letters, numbers, and hyphens"),
+    .regex(
+      /^[A-Z0-9-]+$/,
+      "SKU must contain only uppercase letters, numbers, and hyphens"
+    ),
   name: z
     .string()
     .min(1, "Product name is required")
@@ -29,11 +36,25 @@ const ProductFormSchema = z.object({
     .positive("Weight must be a positive number")
     .optional()
     .or(z.literal("")),
-  dimensions: z.object({
-    height: z.number().positive("Height must be positive").optional().or(z.literal("")),
-    width: z.number().positive("Width must be positive").optional().or(z.literal("")),
-    depth: z.number().positive("Depth must be positive").optional().or(z.literal("")),
-  }).optional(),
+  dimensions: z
+    .object({
+      height: z
+        .number()
+        .positive("Height must be positive")
+        .optional()
+        .or(z.literal("")),
+      width: z
+        .number()
+        .positive("Width must be positive")
+        .optional()
+        .or(z.literal("")),
+      depth: z
+        .number()
+        .positive("Depth must be positive")
+        .optional()
+        .or(z.literal("")),
+    })
+    .optional(),
   isComposite: z.boolean(),
   hasVariation: z.boolean(),
 });
@@ -47,10 +68,16 @@ export interface ProductFormProps {
   loading?: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, loading = false }: ProductFormProps) {
+export function ProductForm({
+  product,
+  onSubmit,
+  onCancel,
+  loading = false,
+}: ProductFormProps) {
   const isEditing = !!product;
-  const [pendingFormData, setPendingFormData] = React.useState<ProductFormData | null>(null);
-  
+  const [pendingFormData, setPendingFormData] =
+    React.useState<ProductFormData | null>(null);
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(ProductFormSchema),
     defaultValues: {
@@ -69,11 +96,16 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
 
   // Initialize transitions hook only for editing mode
   const transitions = useProductTransitions({
-    product: product || {} as Product,
-    onProductUpdate: onSubmit
+    product: product || ({} as Product),
+    onProductUpdate: onSubmit,
   });
 
-  const { watch, handleSubmit, control, formState: { errors } } = form;
+  const {
+    watch,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = form;
   const isComposite = watch("isComposite");
   const hasVariation = watch("hasVariation");
 
@@ -83,11 +115,12 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
       if (isEditing && product) {
         const targetFlags = {
           isComposite: data.isComposite,
-          hasVariation: data.hasVariation
+          hasVariation: data.hasVariation,
         };
 
-        const transitionRequired = await transitions.checkTransitionRequired(targetFlags);
-        
+        const transitionRequired =
+          await transitions.checkTransitionRequired(targetFlags);
+
         if (transitionRequired) {
           // Store form data for after transition
           setPendingFormData(data);
@@ -108,8 +141,10 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
       sku: data.sku,
       name: data.name,
       weight: typeof data.weight === "number" ? data.weight : undefined,
-      dimensions: 
-        data.dimensions?.height && data.dimensions?.width && data.dimensions?.depth
+      dimensions:
+        data.dimensions?.height &&
+        data.dimensions?.width &&
+        data.dimensions?.depth
           ? {
               height: Number(data.dimensions.height),
               width: Number(data.dimensions.width),
@@ -171,7 +206,11 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           required
           disabled={isEditing}
           error={errors.sku}
-          description={isEditing ? "SKU cannot be changed after creation" : "Unique product identifier"}
+          description={
+            isEditing
+              ? "SKU cannot be changed after creation"
+              : "Unique product identifier"
+          }
         />
 
         {/* Product Name */}
@@ -237,8 +276,8 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           name="weight"
           label="Weight (kg)"
           description={
-            isComposite 
-              ? "Weight will be calculated from composition items" 
+            isComposite
+              ? "Weight will be calculated from composition items"
               : "Product weight in kilograms"
           }
         >
@@ -265,7 +304,7 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
             <h3 className="text-sm font-medium">Dimensions (cm)</h3>
             <span className="text-xs text-muted-foreground">Optional</span>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormField
               control={control}
@@ -287,11 +326,7 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               )}
             </FormField>
 
-            <FormField
-              control={control}
-              name="dimensions.width"
-              label="Width"
-            >
+            <FormField control={control} name="dimensions.width" label="Width">
               {(field) => (
                 <Input
                   {...field}
@@ -307,11 +342,7 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               )}
             </FormField>
 
-            <FormField
-              control={control}
-              name="dimensions.depth"
-              label="Depth"
-            >
+            <FormField control={control} name="dimensions.depth" label="Depth">
               {(field) => (
                 <Input
                   {...field}
@@ -333,16 +364,26 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
         {(isComposite || hasVariation) && (
           <div className="rounded-md bg-blue-50 p-4">
             <div className="text-sm text-blue-800">
-              <p className="font-medium mb-2">Additional Configuration Required:</p>
+              <p className="font-medium mb-2">
+                Additional Configuration Required:
+              </p>
               <ul className="list-disc list-inside space-y-1">
                 {isComposite && (
-                  <li>Configure composition items in the Composition tab after saving</li>
+                  <li>
+                    Configure composition items in the Composition tab after
+                    saving
+                  </li>
                 )}
                 {hasVariation && (
-                  <li>Configure product variations in the Variations tab after saving</li>
+                  <li>
+                    Configure product variations in the Variations tab after
+                    saving
+                  </li>
                 )}
                 {isComposite && hasVariation && (
-                  <li>This product will use composition-based variation interface</li>
+                  <li>
+                    This product will use composition-based variation interface
+                  </li>
                 )}
               </ul>
             </div>
@@ -359,32 +400,37 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : isEditing ? "Update Product" : "Create Product"}
+          <Button type="submit" disabled={loading}>
+            {loading
+              ? "Saving..."
+              : isEditing
+                ? "Update Product"
+                : isComposite || hasVariation
+                  ? "Next"
+                  : "Create Product"}
           </Button>
         </div>
       </form>
 
       {/* Transition Dialog */}
-      {isEditing && transitions.transitionState.isOpen && transitions.transitionState.context && (
-        <TransitionDialog
-          open={transitions.transitionState.isOpen}
-          type={transitions.transitionState.type!}
-          context={transitions.transitionState.context}
-          onConfirm={async () => {
-            const result = await transitions.executeTransition();
-            if (result.success) {
-              handleTransitionComplete();
-            }
-            return result;
-          }}
-          onCancel={handleTransitionCancel}
-          loading={transitions.transitionState.loading}
-        />
-      )}
+      {isEditing &&
+        transitions.transitionState.isOpen &&
+        transitions.transitionState.context && (
+          <TransitionDialog
+            open={transitions.transitionState.isOpen}
+            type={transitions.transitionState.type!}
+            context={transitions.transitionState.context}
+            onConfirm={async () => {
+              const result = await transitions.executeTransition();
+              if (result.success) {
+                handleTransitionComplete();
+              }
+              return result;
+            }}
+            onCancel={handleTransitionCancel}
+            loading={transitions.transitionState.loading}
+          />
+        )}
     </>
   );
 }

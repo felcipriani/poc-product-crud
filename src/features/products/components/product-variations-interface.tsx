@@ -14,6 +14,7 @@ export interface ProductVariationsInterfaceProps {
   availableCompositionItems?: any[];
   onCreateCompositionItem?: (data: any) => Promise<void>;
   onDeleteCompositionItem?: (id: string) => Promise<void>;
+  onCountChange?: (count: number) => void;
 }
 
 export function ProductVariationsInterface({
@@ -22,6 +23,7 @@ export function ProductVariationsInterface({
   availableCompositionItems = [],
   onCreateCompositionItem,
   onDeleteCompositionItem,
+  onCountChange,
 }: ProductVariationsInterfaceProps) {
   const {
     variations,
@@ -36,6 +38,10 @@ export function ProductVariationsInterface({
   } = useProductVariations(product.sku);
 
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    onCountChange?.(variations.length);
+  }, [variations.length, onCountChange]);
 
   // Auto-detect and pre-select variation types based on existing variations
   React.useEffect(() => {

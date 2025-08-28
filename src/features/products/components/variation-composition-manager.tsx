@@ -2,17 +2,25 @@
 
 import * as React from "react";
 import { useState, useMemo } from "react";
-import { 
-  Plus, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
   Package,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { Product } from "@/lib/domain/entities/product";
-import { CompositeVariation, CreateCompositeVariationData, UpdateCompositeVariationData } from "@/lib/domain/entities/composite-variation";
-import { CompositionItem, CreateCompositionItemData, UpdateCompositionItemData } from "@/lib/domain/entities/composition-item";
+import {
+  CompositeVariation,
+  CreateCompositeVariationData,
+  UpdateCompositeVariationData,
+} from "@/lib/domain/entities/composite-variation";
+import {
+  CompositionItem,
+  CreateCompositionItemData,
+  UpdateCompositionItemData,
+} from "@/lib/domain/entities/composition-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +37,24 @@ export interface VariationCompositionManagerProps {
   product: Product;
   variations: CompositeVariation[];
   onVariationCreate: (data: CreateCompositeVariationData) => Promise<void>;
-  onVariationUpdate: (id: string, data: UpdateCompositeVariationData) => Promise<void>;
+  onVariationUpdate: (
+    id: string,
+    data: UpdateCompositeVariationData
+  ) => Promise<void>;
   onVariationDelete: (id: string) => Promise<void>;
-  onCompositionItemAdd: (variationId: string, item: CreateCompositionItemData) => Promise<void>;
-  onCompositionItemUpdate: (variationId: string, itemId: string, data: UpdateCompositionItemData) => Promise<void>;
-  onCompositionItemDelete: (variationId: string, itemId: string) => Promise<void>;
+  onCompositionItemAdd: (
+    variationId: string,
+    item: CreateCompositionItemData
+  ) => Promise<void>;
+  onCompositionItemUpdate: (
+    variationId: string,
+    itemId: string,
+    data: UpdateCompositionItemData
+  ) => Promise<void>;
+  onCompositionItemDelete: (
+    variationId: string,
+    itemId: string
+  ) => Promise<void>;
   loading?: boolean;
 }
 
@@ -46,14 +67,16 @@ export function VariationCompositionManager({
   onCompositionItemAdd,
   onCompositionItemUpdate,
   onCompositionItemDelete,
-  loading = false
+  loading = false,
 }: VariationCompositionManagerProps) {
   const [activeVariationId, setActiveVariationId] = useState(variations[0]?.id);
-  const [editingVariationId, setEditingVariationId] = useState<string | null>(null);
-  const [newVariationName, setNewVariationName] = useState('');
+  const [editingVariationId, setEditingVariationId] = useState<string | null>(
+    null
+  );
+  const [newVariationName, setNewVariationName] = useState("");
 
-  const activeVariation = useMemo(() => 
-    variations.find(v => v.id === activeVariationId),
+  const activeVariation = useMemo(
+    () => variations.find((v) => v.id === activeVariationId),
     [variations, activeVariationId]
   );
 
@@ -66,10 +89,10 @@ export function VariationCompositionManager({
 
   const handleVariationRename = async (id: string, newName: string) => {
     const trimmedName = newName.trim();
-    
+
     if (!trimmedName) {
       setEditingVariationId(null);
-      setNewVariationName('');
+      setNewVariationName("");
       return;
     }
 
@@ -89,20 +112,15 @@ export function VariationCompositionManager({
     try {
       await onVariationUpdate(id, { name: trimmedName });
       setEditingVariationId(null);
-      setNewVariationName('');
+      setNewVariationName("");
     } catch (error) {
-      console.error('Failed to rename variation:', error);
-      alert('Failed to rename variation. Please try again.');
+      console.error("Failed to rename variation:", error);
+      alert("Failed to rename variation. Please try again.");
     }
   };
 
   const handleVariationDelete = async (id: string) => {
-    if (variations.length <= 1) {
-      alert('Cannot delete the last variation. At least one variation is required.');
-      return;
-    }
-
-    const variation = variations.find(v => v.id === id);
+    const variation = variations.find((v) => v.id === id);
     if (!variation) return;
 
     const confirmed = window.confirm(
@@ -113,31 +131,32 @@ export function VariationCompositionManager({
 
     try {
       await onVariationDelete(id);
-      
+
       // Switch to another variation if the active one was deleted
       if (activeVariationId === id) {
-        const remainingVariations = variations.filter(v => v.id !== id);
+        const remainingVariations = variations.filter((v) => v.id !== id);
         if (remainingVariations.length > 0) {
           setActiveVariationId(remainingVariations[0].id);
         }
       }
     } catch (error) {
-      console.error('Failed to delete variation:', error);
-      alert('Failed to delete variation. Please try again.');
+      console.error("Failed to delete variation:", error);
+      alert("Failed to delete variation. Please try again.");
     }
   };
 
   const handleCreateVariation = async () => {
-    const nextName = CompositeVariationRules.generateNextVariationName(variations);
-    
+    const nextName =
+      CompositeVariationRules.generateNextVariationName(variations);
+
     try {
       await onVariationCreate({
         productSku: product.sku,
-        name: nextName
+        name: nextName,
       });
     } catch (error) {
-      console.error('Failed to create variation:', error);
-      alert('Failed to create variation. Please try again.');
+      console.error("Failed to create variation:", error);
+      alert("Failed to create variation. Please try again.");
     }
   };
 
@@ -146,7 +165,8 @@ export function VariationCompositionManager({
       <div className="text-center py-8">
         <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <div className="text-muted-foreground">
-          This interface is only available for composite products with variations enabled.
+          This interface is only available for composite products with
+          variations enabled.
         </div>
       </div>
     );
@@ -162,7 +182,7 @@ export function VariationCompositionManager({
             Each variation has its own unique composition of components
           </p>
         </div>
-        
+
         <Button
           onClick={handleCreateVariation}
           disabled={loading}
@@ -183,8 +203,14 @@ export function VariationCompositionManager({
           <div className="text-xs space-y-1">
             <div>• Each variation is defined by its unique composition</div>
             <div>• No traditional variation types are used</div>
-            <div>• Create different &ldquo;versions&rdquo; by varying the composition items</div>
-            <div>• Example: &ldquo;Kit Basic&rdquo; vs &ldquo;Kit Premium&rdquo; with different components</div>
+            <div>
+              • Create different &ldquo;versions&rdquo; by varying the
+              composition items
+            </div>
+            <div>
+              • Example: &ldquo;Kit Basic&rdquo; vs &ldquo;Kit Premium&rdquo;
+              with different components
+            </div>
           </div>
         </div>
       </div>
@@ -224,18 +250,21 @@ export function VariationCompositionManager({
                     onChange={(e) => setNewVariationName(e.target.value)}
                     onBlur={() => {
                       if (newVariationName.trim()) {
-                        handleVariationRename(variation.id, newVariationName.trim());
+                        handleVariationRename(
+                          variation.id,
+                          newVariationName.trim()
+                        );
                       } else {
                         setEditingVariationId(null);
-                        setNewVariationName('');
+                        setNewVariationName("");
                       }
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.currentTarget.blur();
-                      } else if (e.key === 'Escape') {
+                      } else if (e.key === "Escape") {
                         setEditingVariationId(null);
-                        setNewVariationName('');
+                        setNewVariationName("");
                       }
                     }}
                     className="h-6 text-sm min-w-[120px]"
@@ -243,7 +272,9 @@ export function VariationCompositionManager({
                   />
                 ) : (
                   <>
-                    <span className="text-sm font-medium">{variation.name}</span>
+                    <span className="text-sm font-medium">
+                      {variation.name}
+                    </span>
                     <Badge variant="secondary" className="text-xs">
                       {variation.compositionItems.length} items
                     </Badge>
@@ -252,7 +283,7 @@ export function VariationCompositionManager({
                     </span>
                   </>
                 )}
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -289,9 +320,15 @@ export function VariationCompositionManager({
             {activeVariation ? (
               <VariationCompositionEditor
                 variation={activeVariation}
-                onItemAdd={(item) => onCompositionItemAdd(activeVariation.id, item)}
-                onItemUpdate={(itemId, data) => onCompositionItemUpdate(activeVariation.id, itemId, data)}
-                onItemDelete={(itemId) => onCompositionItemDelete(activeVariation.id, itemId)}
+                onItemAdd={(item) =>
+                  onCompositionItemAdd(activeVariation.id, item)
+                }
+                onItemUpdate={(itemId, data) =>
+                  onCompositionItemUpdate(activeVariation.id, itemId, data)
+                }
+                onItemDelete={(itemId) =>
+                  onCompositionItemDelete(activeVariation.id, itemId)
+                }
                 loading={loading}
               />
             ) : (
@@ -310,7 +347,10 @@ export function VariationCompositionManager({
 interface VariationCompositionEditorProps {
   variation: CompositeVariation;
   onItemAdd: (item: CreateCompositionItemData) => Promise<void>;
-  onItemUpdate: (itemId: string, data: UpdateCompositionItemData) => Promise<void>;
+  onItemUpdate: (
+    itemId: string,
+    data: UpdateCompositionItemData
+  ) => Promise<void>;
   onItemDelete: (itemId: string) => Promise<void>;
   loading?: boolean;
 }
@@ -320,7 +360,7 @@ function VariationCompositionEditor({
   onItemAdd,
   onItemUpdate,
   onItemDelete,
-  loading = false
+  loading = false,
 }: VariationCompositionEditorProps) {
   return (
     <div className="space-y-4">
@@ -331,7 +371,7 @@ function VariationCompositionEditor({
           Add Item
         </Button>
       </div>
-      
+
       {variation.compositionItems.length === 0 ? (
         <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
           <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -342,10 +382,15 @@ function VariationCompositionEditor({
       ) : (
         <div className="space-y-2">
           {variation.compositionItems.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-3 border rounded-lg"
+            >
               <div>
                 <div className="font-medium">{item.childSku}</div>
-                <div className="text-sm text-muted-foreground">Quantity: {item.quantity}</div>
+                <div className="text-sm text-muted-foreground">
+                  Quantity: {item.quantity}
+                </div>
               </div>
               <Button variant="ghost" size="sm" className="text-red-600">
                 <Trash2 className="h-4 w-4" />

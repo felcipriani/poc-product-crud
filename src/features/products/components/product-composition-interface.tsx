@@ -3,20 +3,33 @@
 import * as React from "react";
 import { useState, useCallback } from "react";
 import { Product } from "@/lib/domain/entities/product";
-import { CompositionItem, CreateCompositionItemData } from "@/lib/domain/entities/composition-item";
+import {
+  CompositionItem,
+  CreateCompositionItemData,
+} from "@/lib/domain/entities/composition-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AccessibleTable, Column } from "@/components/shared/data-table/accessible-table";
+import {
+  AccessibleTable,
+  Column,
+} from "@/components/shared/data-table/accessible-table";
 import { LoadingSpinner } from "@/components/shared/loading/loading-spinner";
 import { LegacyModal } from "@/components/shared/modals/modal";
 import { Search, Plus, Trash2, Package, Calculator } from "lucide-react";
-import { useComposition, CompositionItemWithDetails } from "../hooks/use-composition";
+import {
+  useComposition,
+  CompositionItemWithDetails,
+} from "../hooks/use-composition";
 
 export interface ProductCompositionInterfaceProps {
   product: Product;
+  onItemCountChange?: (count: number) => void;
 }
 
-export function ProductCompositionInterface({ product }: ProductCompositionInterfaceProps) {
+export function ProductCompositionInterface({
+  product,
+  onItemCountChange,
+}: ProductCompositionInterfaceProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedChildSku, setSelectedChildSku] = useState("");
@@ -34,14 +47,19 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
     refreshComposition,
   } = useComposition(product.sku);
 
+  React.useEffect(() => {
+    onItemCountChange?.(compositionItems.length);
+  }, [compositionItems.length, onItemCountChange]);
+
   // Filter available items based on search query
   const filteredAvailableItems = React.useMemo(() => {
     if (!searchQuery.trim()) return availableItems;
-    
+
     const query = searchQuery.toLowerCase();
-    return availableItems.filter(item => 
-      item.displayName.toLowerCase().includes(query) ||
-      item.sku.toLowerCase().includes(query)
+    return availableItems.filter(
+      (item) =>
+        item.displayName.toLowerCase().includes(query) ||
+        item.sku.toLowerCase().includes(query)
     );
   }, [availableItems, searchQuery]);
 
@@ -54,7 +72,7 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
         childSku: selectedChildSku,
         quantity,
       });
-      
+
       // Reset form
       setSelectedChildSku("");
       setQuantity(1);
@@ -64,34 +82,45 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
     }
   }, [selectedChildSku, quantity, product.sku, createCompositionItem]);
 
-  const handleUpdateQuantity = useCallback(async (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) return;
-    
-    try {
-      await updateCompositionItem(itemId, { quantity: newQuantity });
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
-    }
-  }, [updateCompositionItem]);
+  const handleUpdateQuantity = useCallback(
+    async (itemId: string, newQuantity: number) => {
+      if (newQuantity <= 0) return;
 
-  const handleDeleteItem = useCallback(async (itemId: string) => {
-    if (!confirm("Are you sure you want to remove this item from the composition?")) {
-      return;
-    }
-    
-    try {
-      await deleteCompositionItem(itemId);
-    } catch (error) {
-      console.error("Failed to delete composition item:", error);
-    }
-  }, [deleteCompositionItem]);
+      try {
+        await updateCompositionItem(itemId, { quantity: newQuantity });
+      } catch (error) {
+        console.error("Failed to update quantity:", error);
+      }
+    },
+    [updateCompositionItem]
+  );
+
+  const handleDeleteItem = useCallback(
+    async (itemId: string) => {
+      if (
+        !confirm(
+          "Are you sure you want to remove this item from the composition?"
+        )
+      ) {
+        return;
+      }
+
+      try {
+        await deleteCompositionItem(itemId);
+      } catch (error) {
+        console.error("Failed to delete composition item:", error);
+      }
+    },
+    [deleteCompositionItem]
+  );
 
   if (!product.isComposite) {
     return (
       <div className="text-center py-8">
         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <div className="text-muted-foreground">
-          This product is not marked as composite. Enable &ldquo;Composite Product&rdquo; in the Details tab to manage composition.
+          This product is not marked as composite. Enable &ldquo;Composite
+          Product&rdquo; in the Details tab to manage composition.
         </div>
       </div>
     );
@@ -153,10 +182,9 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
       sortable: true,
       render: (_, item) => (
         <div className="text-center font-medium">
-          {item.unitWeight !== undefined 
-            ? (item.unitWeight * item.quantity).toFixed(2) 
-            : "—"
-          }
+          {item.unitWeight !== undefined
+            ? (item.unitWeight * item.quantity).toFixed(2)
+            : "—"}
         </div>
       ),
     },
@@ -191,7 +219,7 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
             Configure the components that make up this composite product
           </p>
         </div>
-        
+
         <Button onClick={() => setShowAddModal(true)} disabled={loading}>
           <Plus className="h-4 w-4 mr-2" />
           Add Component
@@ -210,14 +238,19 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calculator className="h-5 w-5 text-blue-600" />
-            <span className="font-medium text-blue-900">Total Calculated Weight</span>
+            <span className="font-medium text-blue-900">
+              Total Calculated Weight
+            </span>
           </div>
           <div className="text-xl font-bold text-blue-900">
-            {totalWeight !== undefined ? `${totalWeight.toFixed(2)} kg` : "Calculating..."}
+            {totalWeight !== undefined
+              ? `${totalWeight.toFixed(2)} kg`
+              : "Calculating..."}
           </div>
         </div>
         <div className="text-sm text-blue-700 mt-1">
-          Weight is automatically calculated from component products and their quantities
+          Weight is automatically calculated from component products and their
+          quantities
         </div>
       </div>
 
@@ -274,14 +307,18 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
             <div className="max-h-60 overflow-y-auto border rounded-md">
               {filteredAvailableItems.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  {searchQuery ? 'No products match your search' : 'No products available'}
+                  {searchQuery
+                    ? "No products match your search"
+                    : "No products available"}
                 </div>
               ) : (
                 filteredAvailableItems.map((item) => (
                   <div
                     key={item.sku}
                     className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
-                      selectedChildSku === item.sku ? "bg-blue-50 border-blue-200" : ""
+                      selectedChildSku === item.sku
+                        ? "bg-blue-50 border-blue-200"
+                        : ""
                     }`}
                     onClick={() => setSelectedChildSku(item.sku)}
                   >
@@ -291,7 +328,9 @@ export function ProductCompositionInterface({ product }: ProductCompositionInter
                         <div className="text-sm text-muted-foreground">
                           SKU: {item.sku}
                           {item.weight && (
-                            <span className="ml-2">• Weight: {item.weight}kg</span>
+                            <span className="ml-2">
+                              • Weight: {item.weight}kg
+                            </span>
                           )}
                         </div>
                       </div>

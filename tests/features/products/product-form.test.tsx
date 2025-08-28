@@ -21,7 +21,7 @@ describe("ProductForm", () => {
 
   it("renders create form with empty fields", () => {
     render(<ProductForm {...defaultProps} />);
-    
+
     expect(screen.getByPlaceholderText("e.g., PROD-001")).toHaveValue("");
     expect(screen.getByPlaceholderText("Enter product name")).toHaveValue("");
     // Number inputs can have null value when empty
@@ -43,7 +43,7 @@ describe("ProductForm", () => {
     };
 
     render(<ProductForm {...defaultProps} product={product} />);
-    
+
     expect(screen.getByDisplayValue("TEST-001")).toBeDisabled();
     expect(screen.getByDisplayValue("Test Product")).toBeInTheDocument();
     expect(screen.getByDisplayValue("5.5")).toBeInTheDocument();
@@ -56,27 +56,42 @@ describe("ProductForm", () => {
 
   it("shows form elements", () => {
     render(<ProductForm {...defaultProps} />);
-    
+
     expect(screen.getByPlaceholderText("e.g., PROD-001")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Enter product name")).toBeInTheDocument();
-    expect(screen.getByLabelText("This is a composite product")).toBeInTheDocument();
-    expect(screen.getByLabelText("This product has variations")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Enter product name")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("This is a composite product")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("This product has variations")
+    ).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
     expect(screen.getByText("Create Product")).toBeInTheDocument();
+  });
+
+  it("changes submit label to Next when flags are enabled", async () => {
+    const user = userEvent.setup();
+    render(<ProductForm {...defaultProps} />);
+
+    await user.click(screen.getByLabelText("This is a composite product"));
+
+    expect(screen.getByText("Next")).toBeInTheDocument();
   });
 
   it("calls onCancel when cancel button is clicked", async () => {
     const user = userEvent.setup();
     render(<ProductForm {...defaultProps} />);
-    
+
     await user.click(screen.getByText("Cancel"));
-    
+
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
   it("shows loading state", () => {
     render(<ProductForm {...defaultProps} loading={true} />);
-    
+
     expect(screen.getByText("Saving...")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeDisabled();
   });
@@ -84,15 +99,19 @@ describe("ProductForm", () => {
   it("disables weight field when composite is checked", async () => {
     const user = userEvent.setup();
     render(<ProductForm {...defaultProps} />);
-    
+
     const weightField = screen.getByPlaceholderText("0.00");
-    const compositeCheckbox = screen.getByLabelText("This is a composite product");
-    
+    const compositeCheckbox = screen.getByLabelText(
+      "This is a composite product"
+    );
+
     expect(weightField).not.toBeDisabled();
-    
+
     await user.click(compositeCheckbox);
-    
+
     expect(weightField).toBeDisabled();
-    expect(screen.getByText("Weight will be calculated from composition items")).toBeInTheDocument();
+    expect(
+      screen.getByText("Weight will be calculated from composition items")
+    ).toBeInTheDocument();
   });
 });

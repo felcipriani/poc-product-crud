@@ -101,7 +101,7 @@ describe("useProductVariations", () => {
     expect(mockVariationRepo.update).not.toHaveBeenCalled();
   });
 
-  it("prevents deleting the last variation", async () => {
+  it("allows deleting the last variation", async () => {
     const existing: ProductVariationItem[] = [
       {
         id: "var-1",
@@ -114,14 +114,13 @@ describe("useProductVariations", () => {
       },
     ];
     mockVariationRepo.findByProductSku.mockResolvedValue(existing);
+    mockVariationRepo.delete.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useProductVariations(productSku));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await expect(result.current.deleteVariation("var-1")).rejects.toThrow(
-      "At least one variation is required"
-    );
-    expect(mockVariationRepo.delete).not.toHaveBeenCalled();
+    await result.current.deleteVariation("var-1");
+    expect(mockVariationRepo.delete).toHaveBeenCalledWith("var-1");
   });
 
   it("reorders variations with updated sort order", async () => {

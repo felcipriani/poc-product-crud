@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import React from "react";
 import userEvent from "@testing-library/user-event";
 import { ProductManagement } from "@/features/products/components/product-management";
 
@@ -24,6 +25,21 @@ vi.mock("@/hooks/use-toast", () => {
   };
 });
 
+// Simplify variation and composition interfaces for testing
+vi.mock("@/features/products/components/product-variations-interface", () => ({
+  ProductVariationsInterface: ({ onCountChange }: any) => {
+    onCountChange?.(0);
+    return <div>Variations Step</div>;
+  },
+}));
+
+vi.mock("@/features/products/components/product-composition-interface", () => ({
+  ProductCompositionInterface: ({ onItemCountChange }: any) => {
+    onItemCountChange?.(0);
+    return <div>Composition Step</div>;
+  },
+}));
+
 // Mock the useProducts hook to avoid complex storage mocking
 vi.mock("@/features/products/hooks/use-products", () => ({
   useProducts: () => ({
@@ -32,7 +48,16 @@ vi.mock("@/features/products/hooks/use-products", () => ({
     error: null,
     filters: {},
     setFilters: vi.fn(),
-    createProduct: vi.fn().mockResolvedValue(undefined),
+    createProduct: vi.fn().mockResolvedValue({
+      sku: "NEW-001",
+      name: "New Product",
+      weight: undefined,
+      dimensions: undefined,
+      isComposite: false,
+      hasVariation: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
     updateProduct: vi.fn().mockResolvedValue(undefined),
     deleteProduct: vi.fn().mockResolvedValue(undefined),
     refreshProducts: vi.fn().mockResolvedValue(undefined),
@@ -101,5 +126,23 @@ describe("ProductManagement Integration", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Composite")).toBeInTheDocument();
     expect(screen.getByText("Variations")).toBeInTheDocument();
+  });
+
+  it("disables Finish button until items are added", async () => {
+    const user = userEvent.setup();
+    render(<ProductManagement />);
+
+    await user.click(screen.getByText("Create Product"));
+    await user.type(screen.getByPlaceholderText("e.g., PROD-001"), "SKU1");
+    await user.type(screen.getByPlaceholderText("Enter product name"), "Name");
+    await user.click(screen.getByLabelText("This product has variations"));
+    await user.click(screen.getByText("Next"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Variations Step")).toBeInTheDocument();
+    });
+
+    const finish = screen.getByText("Finish");
+    expect(finish).toBeDisabled();
   });
 });

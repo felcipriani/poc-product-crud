@@ -158,10 +158,6 @@ export function useCompositeVariations(productSku: string) {
       try {
         setError(null);
 
-        if (variations.length <= 1) {
-          throw new Error("At least one variation is required");
-        }
-
         // Delete composition items first
         const variationSku = `${productSku}#${id}`;
         const compositionItems =

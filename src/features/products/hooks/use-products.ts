@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   Product,
   CreateProductData,
@@ -28,7 +35,7 @@ export interface UseProductsReturn {
   loading: boolean;
   error: string | null;
   filters: ProductFilters;
-  setFilters: (filters: ProductFilters) => void;
+  setFilters: Dispatch<SetStateAction<ProductFilters>>;
   createProduct: (data: CreateProductData) => Promise<void>;
   updateProduct: (sku: string, data: UpdateProductData) => Promise<void>;
   deleteProduct: (sku: string) => Promise<void>;

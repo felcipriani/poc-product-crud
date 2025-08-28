@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { VariationRepository } from '@/lib/storage/repositories/variation-repository';
-import { VariationTypeRepository } from '@/lib/storage/repositories/variation-type-repository';
-import { StorageService } from '@/lib/storage/storage-service';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { VariationRepository } from "@/lib/storage/repositories/variation-repository";
+import { VariationTypeRepository } from "@/lib/storage/repositories/variation-type-repository";
 import {
   Variation,
   CreateVariationData,
   UpdateVariationData,
-} from '@/lib/domain/entities/variation';
-import { VariationType } from '@/lib/domain/entities/variation-type';
-import { toast } from '@/hooks/use-toast';
+} from "@/lib/domain/entities/variation";
+import { VariationType } from "@/lib/domain/entities/variation-type";
+import { toast } from "@/hooks/use-toast";
 
 export interface UseVariationsReturn {
   variations: Variation[];
@@ -31,7 +30,10 @@ export function useVariations(): UseVariationsReturn {
   const [error, setError] = useState<string | null>(null);
 
   const variationRepository = useMemo(() => new VariationRepository(), []);
-  const variationTypeRepository = useMemo(() => new VariationTypeRepository(), []);
+  const variationTypeRepository = useMemo(
+    () => new VariationTypeRepository(),
+    []
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -44,13 +46,10 @@ export function useVariations(): UseVariationsReturn {
       setVariations(variationsData);
       setVariationTypes(variationTypesData);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load data';
+      const message =
+        err instanceof Error ? err.message : "Failed to load data";
       setError(message);
-//       // toast({
-//         title: 'Error',
-//         description: message,
-//         variant: 'destructive',
-//       });
+      toast.error("Error", message);
     } finally {
       setLoading(false);
     }
@@ -62,18 +61,12 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.create(data);
         await loadData();
-//         // toast({
-//           title: 'Success',
-//           description: 'Variation created successfully',
-//         });
+        toast.success("Success", "Variation created successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to create variation';
+        const message =
+          err instanceof Error ? err.message : "Failed to create variation";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
+        toast.error("Error", message);
         throw err;
       }
     },
@@ -86,18 +79,12 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.update(id, data);
         await loadData();
-//         // toast({
-//           title: 'Success',
-//           description: 'Variation updated successfully',
-//         });
+        toast.success("Success", "Variation updated successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update variation';
+        const message =
+          err instanceof Error ? err.message : "Failed to update variation";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
+        toast.error("Error", message);
         throw err;
       }
     },
@@ -110,18 +97,12 @@ export function useVariations(): UseVariationsReturn {
         setError(null);
         await variationRepository.delete(id);
         await loadData();
-//         // toast({
-//           title: 'Success',
-//           description: 'Variation deleted successfully',
-//         });
+        toast.success("Success", "Variation deleted successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to delete variation';
+        const message =
+          err instanceof Error ? err.message : "Failed to delete variation";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
+        toast.error("Error", message);
         throw err;
       }
     },
@@ -136,13 +117,10 @@ export function useVariations(): UseVariationsReturn {
         const data = await variationRepository.search(query, variationTypeId);
         setVariations(data);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to search variations';
+        const message =
+          err instanceof Error ? err.message : "Failed to search variations";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
+        toast.error("Error", message);
       } finally {
         setLoading(false);
       }
@@ -156,15 +134,19 @@ export function useVariations(): UseVariationsReturn {
 
   const getVariationsByType = useCallback(
     (variationTypeId: string) => {
-      return variations.filter((variation) => variation.variationTypeId === variationTypeId);
+      return variations.filter(
+        (variation) => variation.variationTypeId === variationTypeId
+      );
     },
     [variations]
   );
 
   const getVariationTypeName = useCallback(
     (variationTypeId: string) => {
-      const variationType = variationTypes.find((vt) => vt.id === variationTypeId);
-      return variationType?.name || 'Unknown Type';
+      const variationType = variationTypes.find(
+        (vt) => vt.id === variationTypeId
+      );
+      return variationType?.name || "Unknown Type";
     },
     [variationTypes]
   );

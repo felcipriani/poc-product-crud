@@ -95,16 +95,16 @@ export function getUserFriendlyMessage(error: unknown): string {
   switch (classified.type) {
     case ErrorType.VALIDATION:
       return classified.message; // Validation messages are already user-friendly
-    
+
     case ErrorType.BUSINESS_RULE:
       return classified.message; // Business rule messages are already user-friendly
-    
+
     case ErrorType.STORAGE:
       return "There was a problem saving your data. Please try again.";
-    
+
     case ErrorType.NETWORK:
       return "Network error. Please check your connection and try again.";
-    
+
     default:
       return "Something went wrong. Please try again.";
   }
@@ -113,18 +113,11 @@ export function getUserFriendlyMessage(error: unknown): string {
 // Toast notification helpers
 export function showErrorToast(error: unknown, title = "Error") {
   const message = getUserFriendlyMessage(error);
-//   // toast({
-//     title,
-//     description: message,
-//     variant: "destructive",
-//   });
+  toast({ title, message, type: "error", duration: 0 });
 }
 
 export function showSuccessToast(message: string, title = "Success") {
-//   // toast({
-//     title,
-//     description: message,
-//   });
+  toast({ title, message, type: "success" });
 }
 
 // Async operation wrapper with error handling
@@ -157,29 +150,31 @@ export async function withErrorHandling<T>(
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const result = await operation();
-      
+
       if (showSuccess && successMessage) {
         showSuccessToast(successMessage);
       }
-      
+
       onSuccess?.(result);
       return result;
     } catch (error) {
       lastError = error;
-      
+
       // If this is the last attempt or no retries configured
       if (attempt === retries) {
         if (showError) {
           showErrorToast(error, errorTitle);
         }
-        
+
         onError?.(error);
         return null;
       }
 
       // Wait before retrying
       if (retryDelay > 0) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelay * (attempt + 1))
+        );
       }
     }
   }
@@ -215,7 +210,7 @@ export class OptimisticUpdate<T> {
   // Rollback to original value
   rollback(): void {
     this.currentValue = this.originalValue;
-    this.rollbackCallbacks.forEach(callback => callback());
+    this.rollbackCallbacks.forEach((callback) => callback());
     this.rollbackCallbacks = [];
   }
 
@@ -226,7 +221,9 @@ export class OptimisticUpdate<T> {
 
   // Check if there are pending changes
   hasPendingChanges(): boolean {
-    return JSON.stringify(this.originalValue) !== JSON.stringify(this.currentValue);
+    return (
+      JSON.stringify(this.originalValue) !== JSON.stringify(this.currentValue)
+    );
   }
 }
 
@@ -237,8 +234,11 @@ export interface FormErrorState {
 
 export function extractFormErrors(error: unknown): FormErrorState {
   const classified = classifyError(error);
-  
-  if (classified.originalError instanceof ValidationError && classified.originalError.field) {
+
+  if (
+    classified.originalError instanceof ValidationError &&
+    classified.originalError.field
+  ) {
     return {
       [classified.originalError.field]: classified.originalError.message,
     };
@@ -249,7 +249,7 @@ export function extractFormErrors(error: unknown): FormErrorState {
     try {
       const zodError = JSON.parse(classified.originalError.message);
       const errors: FormErrorState = {};
-      
+
       if (Array.isArray(zodError)) {
         zodError.forEach((err: any) => {
           if (err.path && err.message) {
@@ -257,7 +257,7 @@ export function extractFormErrors(error: unknown): FormErrorState {
           }
         });
       }
-      
+
       return errors;
     } catch {
       // If parsing fails, return general error
@@ -281,13 +281,13 @@ export async function withRetry<T>(
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       if (attempt === maxRetries) {
         throw error;
       }
 
       // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+      await new Promise((resolve) => setTimeout(resolve, delay * attempt));
     }
   }
 

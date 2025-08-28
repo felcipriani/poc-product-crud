@@ -4,11 +4,25 @@ import { ProductForm } from "@/features/products/components/product-form";
 import { ProductList } from "@/features/products/components/product-list";
 
 // Mock the toast hook
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({
-    toast: vi.fn(),
-  }),
-}));
+vi.mock("@/hooks/use-toast", () => {
+  const toast = {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
+  return {
+    toast,
+    useToast: () => ({
+      toasts: [],
+      addToast: vi.fn(),
+      removeToast: vi.fn(),
+      clearAllToasts: vi.fn(),
+      ...toast,
+      toast: vi.fn(),
+    }),
+  };
+});
 
 describe("Product Components Basic Tests", () => {
   describe("ProductForm", () => {
@@ -20,11 +34,15 @@ describe("Product Components Basic Tests", () => {
 
     it("renders form elements", () => {
       render(<ProductForm {...mockProps} />);
-      
+
       expect(screen.getByText("SKU")).toBeInTheDocument();
       expect(screen.getByText("Product Name")).toBeInTheDocument();
-      expect(screen.getByText("This is a composite product")).toBeInTheDocument();
-      expect(screen.getByText("This product has variations")).toBeInTheDocument();
+      expect(
+        screen.getByText("This is a composite product")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("This product has variations")
+      ).toBeInTheDocument();
       expect(screen.getByText("Create Product")).toBeInTheDocument();
       expect(screen.getByText("Cancel")).toBeInTheDocument();
     });
@@ -45,16 +63,22 @@ describe("Product Components Basic Tests", () => {
 
     it("renders list elements", () => {
       render(<ProductList {...mockProps} />);
-      
+
       expect(screen.getByText("Products")).toBeInTheDocument();
       expect(screen.getByText("Create Product")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Search products by SKU or name...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Search products by SKU or name...")
+      ).toBeInTheDocument();
     });
 
     it("shows empty state", () => {
       render(<ProductList {...mockProps} />);
-      
-      expect(screen.getByText("No products found. Create your first product to get started.")).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          "No products found. Create your first product to get started."
+        )
+      ).toBeInTheDocument();
     });
   });
 });

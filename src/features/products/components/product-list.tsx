@@ -2,16 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Search,
-  Plus,
-  Filter,
-  Edit,
-  Trash2,
-  Package,
-  Layers,
-  Zap,
-} from "lucide-react";
+import { Search, Plus, Filter, Package, Layers, Zap } from "lucide-react";
 import { Product } from "@/lib/domain/entities/product";
 import {
   AccessibleTable,
@@ -146,21 +137,27 @@ export function ProductList({
       label: "SKU",
       sortable: true,
       className: "font-mono text-sm",
+      style: { width: "10%" },
     },
     {
       key: "name",
       label: "Product Name",
       sortable: true,
-      className: "font-medium",
+      className: "font-medium text-sm",
+      style: { width: "25%" },
     },
     {
       key: "weight",
       label: "Weight (kg)",
       sortable: true,
+      className: "text-sm",
+      style: { width: "10%" },
       render: (value, row) => {
         if (row.isComposite) {
           return (
-            <span className="text-muted-foreground italic">Calculated</span>
+            <span className="text-muted-foreground italic text-sm">
+              Calculated
+            </span>
           );
         }
         return value ? `${value} kg` : "—";
@@ -169,6 +166,8 @@ export function ProductList({
     {
       key: "dimensions",
       label: "Dimensions (cm)",
+      className: "text-sm",
+      style: { width: "15%" },
       render: (value) => {
         if (!value) return "—";
         const dimensions = value as {
@@ -182,6 +181,8 @@ export function ProductList({
     {
       key: "isComposite",
       label: "Type",
+      className: "text-sm",
+      style: { width: "20%" },
       render: (_, row) => (
         <div className="flex items-center gap-2">
           {row.isComposite && (
@@ -209,28 +210,33 @@ export function ProductList({
       key: "createdAt",
       label: "Created",
       sortable: true,
+      className: "text-sm",
+      style: { width: "10%" },
       render: (value) => new Date(value as Date).toLocaleDateString(),
     },
     {
       key: "actions" as keyof Product,
       label: "Actions",
+      className: "text-sm text-center [&>*]:flex [&>*]:justify-center",
+      style: { width: "15%", textAlign: "center" },
       render: (_, row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex justify-center space-x-1">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => onEditProduct(row)}
             aria-label={`Edit product ${row.sku}`}
           >
-            <Edit className="h-4 w-4" />
+            Edit
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => handleDeleteClick(row)}
             aria-label={`Delete product ${row.sku}`}
+            className="text-red-600 hover:text-red-700"
           >
-            <Trash2 className="h-4 w-4" />
+            Delete
           </Button>
         </div>
       ),

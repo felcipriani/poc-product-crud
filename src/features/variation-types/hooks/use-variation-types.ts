@@ -1,19 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { VariationTypeRepository } from '@/lib/storage/repositories/variation-type-repository';
-import { StorageService } from '@/lib/storage/storage-service';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { VariationTypeRepository } from "@/lib/storage/repositories/variation-type-repository";
+import { StorageService } from "@/lib/storage/storage-service";
 import {
   VariationType,
   CreateVariationTypeData,
   UpdateVariationTypeData,
-} from '@/lib/domain/entities/variation-type';
-import { toast } from '@/hooks/use-toast';
+} from "@/lib/domain/entities/variation-type";
+import { toast } from "@/hooks/use-toast";
 
 export interface UseVariationTypesReturn {
   variationTypes: VariationType[];
   loading: boolean;
   error: string | null;
   createVariationType: (data: CreateVariationTypeData) => Promise<void>;
-  updateVariationType: (id: string, data: UpdateVariationTypeData) => Promise<void>;
+  updateVariationType: (
+    id: string,
+    data: UpdateVariationTypeData
+  ) => Promise<void>;
   deleteVariationType: (id: string) => Promise<void>;
   searchVariationTypes: (query: string) => Promise<void>;
   refreshVariationTypes: () => Promise<void>;
@@ -26,39 +29,39 @@ export function useVariationTypes(): UseVariationTypesReturn {
 
   const repository = useMemo(() => new VariationTypeRepository(), []);
 
-  const loadVariationTypes = useCallback(async (clearError = true) => {
-    try {
-      setLoading(true);
-      if (clearError) {
-        setError(null);
+  const loadVariationTypes = useCallback(
+    async (clearError = true) => {
+      try {
+        setLoading(true);
+        if (clearError) setError(null);
+        const data = await repository.findAll();
+        setVariationTypes(data);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load variation types";
+        setError(message);
+        toast.error("Error", message);
+      } finally {
+        setLoading(false);
       }
-      const data = await repository.findAll();
-      setVariationTypes(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load variation types';
-      setError(message);
-      toast.error('Error', message);
-    } finally {
-      setLoading(false);
-    }
-  }, [repository]);
+    },
+    [repository]
+  );
 
   const createVariationType = useCallback(
     async (data: CreateVariationTypeData) => {
       try {
         setError(null);
         await repository.create(data);
-        await loadVariationTypes(false); // Don't clear error on reload
-        toast.success('Success', 'Variation type created successfully');
+        await loadVariationTypes(false);
+        toast.success("Success", "Variation type created successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to create variation type';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to create variation type";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
-        throw err;
+        toast.error("Error", message);
       }
     },
     [repository, loadVariationTypes]
@@ -69,20 +72,15 @@ export function useVariationTypes(): UseVariationTypesReturn {
       try {
         setError(null);
         await repository.update(id, data);
-        await loadVariationTypes(false); // Don't clear error on reload
-//         // toast({
-//           title: 'Success',
-//           description: 'Variation type updated successfully',
-//         });
+        await loadVariationTypes(false);
+        toast.success("Success", "Variation type updated successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update variation type';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to update variation type";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
-        throw err;
+        toast.error("Error", message);
       }
     },
     [repository, loadVariationTypes]
@@ -93,20 +91,15 @@ export function useVariationTypes(): UseVariationTypesReturn {
       try {
         setError(null);
         await repository.delete(id);
-        await loadVariationTypes(false); // Don't clear error on reload
-//         // toast({
-//           title: 'Success',
-//           description: 'Variation type deleted successfully',
-//         });
+        await loadVariationTypes(false);
+        toast.success("Success", "Variation type deleted successfully");
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to delete variation type';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to delete variation type";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
-        throw err;
+        toast.error("Error", message);
       }
     },
     [repository, loadVariationTypes]
@@ -120,13 +113,12 @@ export function useVariationTypes(): UseVariationTypesReturn {
         const data = await repository.search(query);
         setVariationTypes(data);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to search variation types';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to search variation types";
         setError(message);
-//         // toast({
-//           title: 'Error',
-//           description: message,
-//           variant: 'destructive',
-//         });
+        toast.error("Error", message);
       } finally {
         setLoading(false);
       }

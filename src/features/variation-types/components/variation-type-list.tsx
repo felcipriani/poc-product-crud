@@ -84,6 +84,8 @@ export function VariationTypeList({
       key: "name" as keyof VariationType,
       label: "Name",
       sortable: true,
+      className: "text-sm",
+      style: { width: "50%" },
       render: (_, variationType: VariationType) => (
         <div>
           <div className="font-medium text-gray-900">{variationType.name}</div>
@@ -96,6 +98,8 @@ export function VariationTypeList({
     {
       key: "modifiesWeight" as keyof VariationType,
       label: "Modifies Weight",
+      className: "text-sm",
+      style: { width: "20%" },
       render: (_, variationType: VariationType) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -111,6 +115,8 @@ export function VariationTypeList({
     {
       key: "modifiesDimensions" as keyof VariationType,
       label: "Modifies Dimensions",
+      className: "text-sm",
+      style: { width: "20%" },
       render: (_, variationType: VariationType) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -126,8 +132,10 @@ export function VariationTypeList({
     {
       key: "id" as keyof VariationType,
       label: "Actions",
+      className: "text-sm text-center",
+      style: { width: "10%", textAlign: "center" },
       render: (_, variationType: VariationType) => (
-        <div className="flex space-x-2">
+        <div className="flex justify-center space-x-1">
           {selectable && (
             <Button
               size="sm"

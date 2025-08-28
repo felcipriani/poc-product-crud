@@ -11,7 +11,11 @@ import { ProductRepository } from "@/lib/storage/repositories/product-repository
 import { ProductVariationItemRepository } from "@/lib/storage/repositories/product-variation-item-repository";
 import { CompositionItemRepository } from "@/lib/storage/repositories/composition-item-repository";
 import { useOptimisticList } from "@/hooks/use-optimistic-mutation";
-import { withErrorHandling, showSuccessToast, showErrorToast } from "@/lib/utils/error-handling";
+import {
+  withErrorHandling,
+  showSuccessToast,
+  showErrorToast,
+} from "@/lib/utils/error-handling";
 
 export interface ProductFilters {
   search?: string;
@@ -35,9 +39,12 @@ export function useProducts(): UseProductsReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<ProductFilters>({});
-  
+
   // Use optimistic list for better UX
-  const optimisticList = useOptimisticList<Product, string>([], (product) => product.sku);
+  const optimisticList = useOptimisticList<Product, string>(
+    [],
+    (product) => product.sku
+  );
 
   // Initialize services with useMemo to prevent recreation on every render
   const productRepository = useMemo(() => new ProductRepository(), []);
@@ -61,10 +68,16 @@ export function useProducts(): UseProductsReturn {
           filters.hasVariation !== undefined
         ) {
           products = await productRepository.findWhere((product) => {
-            if (filters.isComposite !== undefined && product.isComposite !== filters.isComposite) {
+            if (
+              filters.isComposite !== undefined &&
+              product.isComposite !== filters.isComposite
+            ) {
               return false;
             }
-            if (filters.hasVariation !== undefined && product.hasVariation !== filters.hasVariation) {
+            if (
+              filters.hasVariation !== undefined &&
+              product.hasVariation !== filters.hasVariation
+            ) {
               return false;
             }
             return true;
@@ -79,7 +92,8 @@ export function useProducts(): UseProductsReturn {
         errorTitle: "Failed to load products",
         showErrorToast: true,
         onError: (err) => {
-          const errorMessage = err instanceof Error ? err.message : "Failed to load products";
+          const errorMessage =
+            err instanceof Error ? err.message : "Failed to load products";
           setError(errorMessage);
         },
       }
@@ -88,9 +102,9 @@ export function useProducts(): UseProductsReturn {
     if (result) {
       optimisticList.setList(result);
     }
-    
+
     setLoading(false);
-  }, [filters, optimisticList, productRepository]);
+  }, [filters, optimisticList.setList, productRepository]);
 
   const createProduct = useCallback(
     async (data: CreateProductData) => {
@@ -106,11 +120,13 @@ export function useProducts(): UseProductsReturn {
 
       try {
         const createdProduct = await productRepository.create(data);
-        
+
         // Commit the optimistic update with real data
-        const currentProducts = optimisticList.items.filter(p => p.sku !== data.sku);
+        const currentProducts = optimisticList.items.filter(
+          (p) => p.sku !== data.sku
+        );
         optimisticList.commit([...currentProducts, createdProduct]);
-        
+
         showSuccessToast(`Product "${data.name}" created successfully`);
       } catch (err) {
         // Rollback optimistic update
@@ -129,13 +145,13 @@ export function useProducts(): UseProductsReturn {
 
       try {
         const updatedProduct = await productRepository.update(sku, data);
-        
+
         // Commit the optimistic update with real data
-        const currentProducts = optimisticList.items.map(p => 
+        const currentProducts = optimisticList.items.map((p) =>
           p.sku === sku ? updatedProduct : p
         );
         optimisticList.commit(currentProducts);
-        
+
         showSuccessToast(`Product "${sku}" updated successfully`);
       } catch (err) {
         // Rollback optimistic update
@@ -154,10 +170,10 @@ export function useProducts(): UseProductsReturn {
 
       try {
         await productRepository.delete(sku);
-        
+
         // Commit the optimistic update
         optimisticList.commit();
-        
+
         showSuccessToast(`Product "${sku}" deleted successfully`);
       } catch (err) {
         // Rollback optimistic update

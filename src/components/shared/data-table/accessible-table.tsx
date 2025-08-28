@@ -23,6 +23,7 @@ export interface Column<T> {
   sortable?: boolean;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export interface AccessibleTableProps<T> {
@@ -106,7 +107,8 @@ export function AccessibleTable<T>({
               <div
                 role="columnheader"
                 key={String(column.key)}
-                className={cn("flex-1 p-2", column.className)}
+                className={cn("p-2", column.className)}
+                style={column.style}
                 aria-sort={
                   sortBy === column.key
                     ? getSortAriaSort(sortDirection || null)
@@ -160,7 +162,8 @@ export function AccessibleTable<T>({
                         <div
                           role="cell"
                           key={String(column.key)}
-                          className={cn("flex-1 p-2", column.className)}
+                          className={cn("p-2", column.className)}
+                          style={column.style}
                         >
                           {column.render
                             ? column.render(row[column.key], row)
@@ -180,7 +183,7 @@ export function AccessibleTable<T>({
 
   return (
     <div className={cn("relative", className)}>
-      <Table>
+      <Table className="table-fixed w-full">
         {caption && (
           <caption className="text-sm text-muted-foreground mb-4">
             {caption}
@@ -193,6 +196,7 @@ export function AccessibleTable<T>({
               <TableHead
                 key={String(column.key)}
                 className={cn(column.className)}
+                style={column.style}
                 aria-sort={
                   sortBy === column.key
                     ? getSortAriaSort(sortDirection || null)
@@ -249,6 +253,7 @@ export function AccessibleTable<T>({
                   <TableCell
                     key={String(column.key)}
                     className={cn(column.className)}
+                    style={column.style}
                   >
                     {column.render
                       ? column.render(row[column.key], row)

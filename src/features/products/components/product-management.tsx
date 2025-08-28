@@ -1,8 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
-import { Product, CreateProductData, UpdateProductData } from "@/lib/domain/entities/product";
+import { useState, useCallback } from "react";
+import {
+  Product,
+  CreateProductData,
+  UpdateProductData,
+} from "@/lib/domain/entities/product";
 import { ProductList } from "./product-list";
 import { ProductForm } from "./product-form";
 import { ProductEditTabs } from "./product-edit-tabs";
@@ -38,16 +42,18 @@ export function ProductManagement() {
     setViewMode("edit");
   };
 
-  const handleFormSubmit = async (data: CreateProductData | UpdateProductData) => {
+  const handleFormSubmit = async (
+    data: CreateProductData | UpdateProductData
+  ) => {
     try {
       setFormLoading(true);
-      
+
       if (viewMode === "create") {
         await createProduct(data as CreateProductData);
       } else if (viewMode === "edit" && selectedProduct) {
         await updateProduct(selectedProduct.sku, data as UpdateProductData);
       }
-      
+
       setViewMode("list");
       setSelectedProduct(null);
     } catch (error) {
@@ -63,13 +69,16 @@ export function ProductManagement() {
     setSelectedProduct(null);
   };
 
-  const handleSearch = (query: string) => {
-    setFilters({ ...filters, search: query });
-  };
+  const handleSearch = useCallback((query: string) => {
+    setFilters((prev) => ({ ...prev, search: query }));
+  }, []);
 
-  const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
-    setFilters({ ...filters, ...newFilters });
-  };
+  const handleFilterChange = useCallback(
+    (newFilters: Partial<ProductFilters>) => {
+      setFilters((prev) => ({ ...prev, ...newFilters }));
+    },
+    []
+  );
 
   const handleDeleteProduct = async (sku: string) => {
     await deleteProduct(sku);

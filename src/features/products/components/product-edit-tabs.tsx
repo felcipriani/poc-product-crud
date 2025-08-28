@@ -7,7 +7,6 @@ import { ProductVariationsInterface } from "./product-variations-interface";
 import { ProductCompositionInterface } from "./product-composition-interface";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Layers, Settings } from "lucide-react";
-import { useComposition } from "../hooks/use-composition";
 import { Button } from "@/components/ui/button";
 import { showErrorToast } from "@/lib/utils/error-handling";
 
@@ -26,8 +25,6 @@ export function ProductEditTabs({
 }: ProductEditTabsProps) {
   const [activeTab, setActiveTab] = React.useState("details");
 
-  // Hook for composition (for availableCompositionItems)
-  const compositionHook = useComposition(product.sku);
   const [variationCount, setVariationCount] = React.useState(0);
   const [compositionCount, setCompositionCount] = React.useState(0);
 
@@ -129,14 +126,6 @@ export function ProductEditTabs({
               <div className="space-y-6">
                 <ProductVariationsInterface
                   product={product}
-                  compositionItems={compositionHook.compositionItems}
-                  availableCompositionItems={compositionHook.availableItems}
-                  onCreateCompositionItem={
-                    compositionHook.createCompositionItem
-                  }
-                  onDeleteCompositionItem={
-                    compositionHook.deleteCompositionItem
-                  }
                   onCountChange={setVariationCount}
                 />
                 <div className="flex justify-end">

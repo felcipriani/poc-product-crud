@@ -137,4 +137,50 @@ describe("useCompositeVariations", () => {
       "CHILD-003#opt"
     );
   });
+
+  it("allows creating variations and adding composition items", async () => {
+    const variation = {
+      id: "var-1",
+      productSku,
+      selections: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockVariationRepository.findByProductSku
+      .mockResolvedValueOnce([]) // initial load
+      .mockResolvedValue([variation]); // subsequent loads
+
+    const items: any[] = [];
+    mockCompositionRepository.findByParent.mockImplementation(
+      async (parent) => {
+        if (parent === `${productSku}#var-1`) return items;
+        return [];
+      }
+    );
+    mockCompositionRepository.create.mockImplementation(async (data) => {
+      const item = {
+        id: "comp-1",
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      items.push(item);
+      return item;
+    });
+
+    const { result } = renderHook(() => useCompositeVariations(productSku));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.variations).toHaveLength(0);
+
+    await result.current.createVariation({ productSku });
+    await waitFor(() => expect(result.current.variations).toHaveLength(1));
+
+    await result.current.addCompositionItem("var-1", {
+      childSku: "CHILD-001",
+      quantity: 1,
+    });
+    await waitFor(() =>
+      expect(result.current.variations[0].compositionItems).toHaveLength(1)
+    );
+  });
 });

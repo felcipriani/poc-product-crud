@@ -210,7 +210,10 @@ export function useCompositeVariations(productSku: string) {
 
   // Add composition item to variation
   const addCompositionItem = useCallback(
-    async (variationId: string, itemData: CreateCompositionItemData) => {
+    async (
+      variationId: string,
+      itemData: Omit<CreateCompositionItemData, "parentSku">
+    ) => {
       try {
         setError(null);
 

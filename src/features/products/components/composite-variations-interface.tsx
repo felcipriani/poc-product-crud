@@ -34,8 +34,14 @@ export interface CompositeVariationsInterfaceProps {
   ) => Promise<void>;
   onDeleteVariation: (id: string) => Promise<void>;
   onReorderVariations: (ids: string[]) => Promise<void>;
-  onCreateCompositionItem: (data: CreateCompositionItemData) => Promise<void>;
-  onDeleteCompositionItem: (id: string) => Promise<void>;
+  onCreateCompositionItem: (
+    variationId: string,
+    data: Omit<CreateCompositionItemData, "parentSku">
+  ) => Promise<void>;
+  onDeleteCompositionItem: (
+    variationId: string,
+    itemId: string
+  ) => Promise<void>;
   compositionItems: CompositionItem[];
   availableCompositionItems: Array<{
     id: string;
@@ -375,10 +381,8 @@ export function CompositeVariationsInterface({
 
       try {
         if (item.isNew) {
-          // Create new composition item
-          const variationSku = `${product.sku}#${template.variationId}`;
-          await onCreateCompositionItem({
-            parentSku: variationSku,
+          // Create new composition item for this variation
+          await onCreateCompositionItem(template.variationId, {
             childSku: item.childSku,
             quantity: item.quantity,
           });
@@ -389,7 +393,7 @@ export function CompositeVariationsInterface({
         console.error("Failed to save composition item:", error);
       }
     },
-    [templates, product.sku, onCreateCompositionItem]
+    [templates, onCreateCompositionItem]
   );
 
   const cancelEditCompositionItem = useCallback(
@@ -444,7 +448,7 @@ export function CompositeVariationsInterface({
       } else {
         // Delete from backend
         try {
-          await onDeleteCompositionItem(itemId);
+          await onDeleteCompositionItem(templateId, itemId);
         } catch (error) {
           console.error("Failed to delete composition item:", error);
         }

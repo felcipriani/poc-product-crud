@@ -603,7 +603,7 @@ export function EditableVariationsGrid({
                               variant="ghost"
                               size="sm"
                               onClick={() => deleteRow(row.id)}
-                              disabled={loading || rows.length <= 1}
+                              disabled={loading}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

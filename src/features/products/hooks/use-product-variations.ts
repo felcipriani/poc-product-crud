@@ -136,9 +136,6 @@ export function useProductVariations(
   const deleteVariation = async (id: string) => {
     try {
       setError(null);
-      if (variations.length <= 1) {
-        throw new Error("At least one variation is required");
-      }
       await variationItemRepo.delete(id);
       await loadData();
     } catch (err) {

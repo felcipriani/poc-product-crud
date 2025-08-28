@@ -31,6 +31,7 @@ export function ProductManagement() {
   const [draftProduct, setDraftProduct] = useState<CreateProductData | null>(
     null
   );
+  const [itemCount, setItemCount] = useState(0);
 
   const compositionRepo = useMemo(() => new CompositionItemRepository(), []);
   const variationRepo = useMemo(() => new ProductVariationItemRepository(), []);
@@ -75,9 +76,11 @@ export function ProductManagement() {
           setDraftProduct(data as CreateProductData);
           setSelectedProduct(draft);
           if (isComposite && !hasVariation) {
+            setItemCount(0);
             setCreateStep("composition");
           } else {
             // variations step covers both variation-only and composite+variation cases
+            setItemCount(0);
             setCreateStep("variations");
           }
           return;
@@ -228,18 +231,28 @@ export function ProductManagement() {
 
         {createStep === "variations" && selectedProduct && (
           <div className="space-y-6">
-            <ProductVariationsInterface product={selectedProduct} />
+            <ProductVariationsInterface
+              product={selectedProduct}
+              onCountChange={setItemCount}
+            />
             <div className="flex justify-end">
-              <Button onClick={handleFinishCreation}>Finish</Button>
+              <Button onClick={handleFinishCreation} disabled={itemCount === 0}>
+                Finish
+              </Button>
             </div>
           </div>
         )}
 
         {createStep === "composition" && selectedProduct && (
           <div className="space-y-6">
-            <ProductCompositionInterface product={selectedProduct} />
+            <ProductCompositionInterface
+              product={selectedProduct}
+              onItemCountChange={setItemCount}
+            />
             <div className="flex justify-end">
-              <Button onClick={handleFinishCreation}>Finish</Button>
+              <Button onClick={handleFinishCreation} disabled={itemCount === 0}>
+                Finish
+              </Button>
             </div>
           </div>
         )}

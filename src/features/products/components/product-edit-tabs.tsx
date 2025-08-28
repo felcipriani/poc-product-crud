@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Layers, Settings } from "lucide-react";
 import { useComposition } from "../hooks/use-composition";
 import { Button } from "@/components/ui/button";
+import { showErrorToast } from "@/lib/utils/error-handling";
 
 export interface ProductEditTabsProps {
   product: Product;
@@ -27,6 +28,30 @@ export function ProductEditTabs({
 
   // Hook for composition (for availableCompositionItems)
   const compositionHook = useComposition(product.sku);
+  const [variationCount, setVariationCount] = React.useState(0);
+  const [compositionCount, setCompositionCount] = React.useState(0);
+
+  const handleVariationsSave = () => {
+    if (variationCount === 0) {
+      showErrorToast(
+        new Error("Variable products require at least one variation"),
+        "Invalid Variations"
+      );
+      return;
+    }
+    onCancel();
+  };
+
+  const handleCompositionSave = () => {
+    if (compositionCount === 0) {
+      showErrorToast(
+        new Error("Composite products require at least one component"),
+        "Invalid Composition"
+      );
+      return;
+    }
+    onCancel();
+  };
 
   const showVariationsTab = product.hasVariation && !product.isComposite;
   const showCompositionTab = product.isComposite;
@@ -85,9 +110,12 @@ export function ProductEditTabs({
         {showVariationsTab && (
           <TabsContent value="variations" className="mt-6">
             <div className="space-y-6">
-              <ProductVariationsInterface product={product} />
+              <ProductVariationsInterface
+                product={product}
+                onCountChange={setVariationCount}
+              />
               <div className="flex justify-end">
-                <Button onClick={onCancel} disabled={loading}>
+                <Button onClick={handleVariationsSave} disabled={loading}>
                   Save
                 </Button>
               </div>
@@ -109,18 +137,22 @@ export function ProductEditTabs({
                   onDeleteCompositionItem={
                     compositionHook.deleteCompositionItem
                   }
+                  onCountChange={setVariationCount}
                 />
                 <div className="flex justify-end">
-                  <Button onClick={onCancel} disabled={loading}>
+                  <Button onClick={handleVariationsSave} disabled={loading}>
                     Save
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-6">
-                <ProductCompositionInterface product={product} />
+                <ProductCompositionInterface
+                  product={product}
+                  onItemCountChange={setCompositionCount}
+                />
                 <div className="flex justify-end">
-                  <Button onClick={onCancel} disabled={loading}>
+                  <Button onClick={handleCompositionSave} disabled={loading}>
                     Save
                   </Button>
                 </div>

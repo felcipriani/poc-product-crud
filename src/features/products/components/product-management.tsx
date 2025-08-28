@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Product,
   CreateProductData,
@@ -10,8 +10,14 @@ import {
 import { ProductList } from "./product-list";
 import { ProductForm } from "./product-form";
 import { ProductEditTabs } from "./product-edit-tabs";
+import { ProductVariationsInterface } from "./product-variations-interface";
+import { ProductCompositionInterface } from "./product-composition-interface";
 import { LegacyModal } from "@/components/shared/modals/modal";
+import { Button } from "@/components/ui/button";
 import { useProducts, ProductFilters } from "../hooks/use-products";
+import { CompositionItemRepository } from "@/lib/storage/repositories/composition-item-repository";
+import { ProductVariationItemRepository } from "@/lib/storage/repositories/product-variation-item-repository";
+import { showErrorToast } from "@/lib/utils/error-handling";
 
 type ViewMode = "list" | "create" | "edit";
 
@@ -19,6 +25,15 @@ export function ProductManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [createStep, setCreateStep] = useState<
+    "form" | "variations" | "composition"
+  >("form");
+  const [draftProduct, setDraftProduct] = useState<CreateProductData | null>(
+    null
+  );
+
+  const compositionRepo = useMemo(() => new CompositionItemRepository(), []);
+  const variationRepo = useMemo(() => new ProductVariationItemRepository(), []);
 
   const {
     products,
@@ -34,6 +49,7 @@ export function ProductManagement() {
 
   const handleCreateProduct = () => {
     setSelectedProduct(null);
+    setCreateStep("form");
     setViewMode("create");
   };
 
@@ -49,6 +65,24 @@ export function ProductManagement() {
       setFormLoading(true);
 
       if (viewMode === "create") {
+        const { isComposite, hasVariation } = data as CreateProductData;
+        if (isComposite || hasVariation) {
+          const draft: Product = {
+            ...(data as CreateProductData),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          setDraftProduct(data as CreateProductData);
+          setSelectedProduct(draft);
+          if (isComposite && !hasVariation) {
+            setCreateStep("composition");
+          } else {
+            // variations step covers both variation-only and composite+variation cases
+            setCreateStep("variations");
+          }
+          return;
+        }
+
         await createProduct(data as CreateProductData);
       } else if (viewMode === "edit" && selectedProduct) {
         await updateProduct(selectedProduct.sku, data as UpdateProductData);
@@ -56,6 +90,7 @@ export function ProductManagement() {
 
       setViewMode("list");
       setSelectedProduct(null);
+      setCreateStep("form");
     } catch (error) {
       // Error handling is done in the hook
       throw error;
@@ -64,9 +99,53 @@ export function ProductManagement() {
     }
   };
 
-  const handleFormCancel = () => {
+  const handleFormCancel = async () => {
+    if (draftProduct) {
+      await compositionRepo.deleteByParent(draftProduct.sku);
+      await variationRepo.deleteByProduct(draftProduct.sku);
+      setDraftProduct(null);
+    }
     setViewMode("list");
     setSelectedProduct(null);
+    setCreateStep("form");
+  };
+
+  const handleFinishCreation = async () => {
+    if (!draftProduct) return;
+
+    try {
+      setFormLoading(true);
+
+      if (draftProduct.isComposite) {
+        const count = await compositionRepo.countByParent(draftProduct.sku);
+        if (count === 0) {
+          showErrorToast(
+            new Error("Composite products require at least one component"),
+            "Invalid Composition"
+          );
+          return;
+        }
+      }
+
+      if (draftProduct.hasVariation) {
+        const count = await variationRepo.countByProduct(draftProduct.sku);
+        if (count === 0) {
+          showErrorToast(
+            new Error("Variable products require at least one variation"),
+            "Invalid Variations"
+          );
+          return;
+        }
+      }
+
+      await createProduct(draftProduct);
+      setDraftProduct(null);
+      setViewMode("list");
+      setSelectedProduct(null);
+      setCreateStep("form");
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const handleSearch = useCallback((query: string) => {
@@ -123,16 +202,47 @@ export function ProductManagement() {
             handleFormCancel();
           }
         }}
-        title="Create Product"
-        description="Add a new product to your catalog"
-        size="lg"
+        title={
+          createStep === "form"
+            ? "Create Product"
+            : createStep === "variations"
+              ? "Configure Variations"
+              : "Configure Composition"
+        }
+        description={
+          createStep === "form"
+            ? "Add a new product to your catalog"
+            : "Complete the product setup"
+        }
+        size="xl"
+        className="max-h-[90vh] overflow-y-auto"
       >
-        <ProductForm
-          product={undefined}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          loading={formLoading}
-        />
+        {createStep === "form" && (
+          <ProductForm
+            product={undefined}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+            loading={formLoading}
+          />
+        )}
+
+        {createStep === "variations" && selectedProduct && (
+          <div className="space-y-6">
+            <ProductVariationsInterface product={selectedProduct} />
+            <div className="flex justify-end">
+              <Button onClick={handleFinishCreation}>Finish</Button>
+            </div>
+          </div>
+        )}
+
+        {createStep === "composition" && selectedProduct && (
+          <div className="space-y-6">
+            <ProductCompositionInterface product={selectedProduct} />
+            <div className="flex justify-end">
+              <Button onClick={handleFinishCreation}>Finish</Button>
+            </div>
+          </div>
+        )}
       </LegacyModal>
     </>
   );

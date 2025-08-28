@@ -5,8 +5,8 @@ import {
   useEffect,
   useCallback,
   useMemo,
-  type Dispatch,
-  type SetStateAction,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import {
   Product,
@@ -36,7 +36,7 @@ export interface UseProductsReturn {
   error: string | null;
   filters: ProductFilters;
   setFilters: Dispatch<SetStateAction<ProductFilters>>;
-  createProduct: (data: CreateProductData) => Promise<void>;
+  createProduct: (data: CreateProductData) => Promise<Product>;
   updateProduct: (sku: string, data: UpdateProductData) => Promise<void>;
   deleteProduct: (sku: string) => Promise<void>;
   refreshProducts: () => Promise<void>;
@@ -135,6 +135,7 @@ export function useProducts(): UseProductsReturn {
         optimisticList.commit([...currentProducts, createdProduct]);
 
         showSuccessToast(`Product "${data.name}" created successfully`);
+        return createdProduct;
       } catch (err) {
         // Rollback optimistic update
         optimisticList.rollback();

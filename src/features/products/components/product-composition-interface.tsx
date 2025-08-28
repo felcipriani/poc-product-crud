@@ -24,11 +24,13 @@ import {
 export interface ProductCompositionInterfaceProps {
   product: Product;
   onItemCountChange?: (count: number) => void;
+  showHeader?: boolean;
 }
 
 export function ProductCompositionInterface({
   product,
   onItemCountChange,
+  showHeader = true,
 }: ProductCompositionInterfaceProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -209,22 +211,24 @@ export function ProductCompositionInterface({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Product Composition
-          </h2>
-          <p className="text-muted-foreground">
-            Configure the components that make up this composite product
-          </p>
-        </div>
+      {showHeader && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Product Composition
+            </h2>
+            <p className="text-muted-foreground">
+              Configure the components that make up this composite product
+            </p>
+          </div>
 
-        <Button onClick={() => setShowAddModal(true)} disabled={loading}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Component
-        </Button>
-      </div>
+          <Button onClick={() => setShowAddModal(true)} disabled={loading}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Component
+          </Button>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (

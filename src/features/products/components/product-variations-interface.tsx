@@ -15,6 +15,7 @@ export interface ProductVariationsInterfaceProps {
   onCreateCompositionItem?: (data: any) => Promise<void>;
   onDeleteCompositionItem?: (id: string) => Promise<void>;
   onCountChange?: (count: number) => void;
+  showHeader?: boolean;
 }
 
 export function ProductVariationsInterface({
@@ -24,6 +25,7 @@ export function ProductVariationsInterface({
   onCreateCompositionItem,
   onDeleteCompositionItem,
   onCountChange,
+  showHeader = true,
 }: ProductVariationsInterfaceProps) {
   const {
     variations,
@@ -73,14 +75,16 @@ export function ProductVariationsInterface({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold">Product Variations</h2>
-        <p className="text-muted-foreground">
-          {product.isComposite
-            ? "Configure composition templates for each variation combination"
-            : "Configure variation types and create specific combinations for this product"}
-        </p>
-      </div>
+      {showHeader && (
+        <div>
+          <h2 className="text-xl font-semibold">Product Variations</h2>
+          <p className="text-muted-foreground">
+            {product.isComposite
+              ? "Configure composition templates for each variation combination"
+              : "Configure variation types and create specific combinations for this product"}
+          </p>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (

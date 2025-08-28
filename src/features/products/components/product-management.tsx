@@ -234,6 +234,7 @@ export function ProductManagement() {
             <ProductVariationsInterface
               product={selectedProduct}
               onCountChange={setItemCount}
+              showHeader={false}
             />
             <div className="flex justify-end">
               <Button onClick={handleFinishCreation} disabled={itemCount === 0}>
@@ -248,6 +249,7 @@ export function ProductManagement() {
             <ProductCompositionInterface
               product={selectedProduct}
               onItemCountChange={setItemCount}
+              showHeader={false}
             />
             <div className="flex justify-end">
               <Button onClick={handleFinishCreation} disabled={itemCount === 0}>

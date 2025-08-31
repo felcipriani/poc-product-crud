@@ -1,5 +1,6 @@
-import { vi, beforeEach } from "vitest";
+import { vi, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 import "@testing-library/jest-dom";
+import { cleanup } from "@testing-library/react";
 
 // Mock localStorage
 const localStorageMock = {
@@ -67,4 +68,20 @@ Object.defineProperty(global, "crypto", {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorageMock.getItem.mockReturnValue(null);
+});
+
+// Cleanup after each test
+afterEach(() => {
+  cleanup();
+  localStorageMock.clear();
+  vi.clearAllMocks();
+});
+
+// Setup MSW placeholders
+beforeAll(() => {
+  // MSW setup will go here when needed
+});
+
+afterAll(() => {
+  // MSW cleanup will go here when needed
 });

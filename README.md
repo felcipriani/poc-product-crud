@@ -114,7 +114,7 @@ src/
 │   ├── storage/                # localStorage abstraction
 │   ├── utils/                  # Utility functions
 │   └── validations/            # Zod schemas
-└── tests/                      # Test utilities and factories
+└── src/tests/                  # Test utilities and factories
 ```
 
 ### Complex Scenarios

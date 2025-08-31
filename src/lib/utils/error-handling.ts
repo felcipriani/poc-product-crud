@@ -145,41 +145,27 @@ export async function withErrorHandling<T>(
     retryDelay = 1000,
   } = options;
 
-  let lastError: unknown;
+  try {
+    const runner = () => operation();
+    const result =
+      retries > 0
+        ? await withRetry(runner, retries + 1, retryDelay)
+        : await runner();
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const result = await operation();
-
-      if (showSuccess && successMessage) {
-        showSuccessToast(successMessage);
-      }
-
-      onSuccess?.(result);
-      return result;
-    } catch (error) {
-      lastError = error;
-
-      // If this is the last attempt or no retries configured
-      if (attempt === retries) {
-        if (showError) {
-          showErrorToast(error, errorTitle);
-        }
-
-        onError?.(error);
-        return null;
-      }
-
-      // Wait before retrying
-      if (retryDelay > 0) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, retryDelay * (attempt + 1))
-        );
-      }
+    if (showSuccess && successMessage) {
+      showSuccessToast(successMessage);
     }
-  }
 
-  return null;
+    onSuccess?.(result);
+    return result;
+  } catch (error) {
+    if (showError) {
+      showErrorToast(error, errorTitle);
+    }
+
+    onError?.(error);
+    return null;
+  }
 }
 
 // Optimistic update helper
@@ -232,37 +218,43 @@ export interface FormErrorState {
   [field: string]: string | undefined;
 }
 
+function isFieldValidationError(error: Error): error is ValidationError & {
+  field: string;
+} {
+  return error instanceof ValidationError && !!error.field;
+}
+
+function parseZodErrors(message: string): FormErrorState | null {
+  try {
+    const parsed = JSON.parse(message);
+    const errors: FormErrorState = {};
+    if (Array.isArray(parsed)) {
+      parsed.forEach((err: any) => {
+        if (err.path && err.message) {
+          errors[err.path.join(".")] = err.message;
+        }
+      });
+    }
+    return errors;
+  } catch {
+    return null;
+  }
+}
+
 export function extractFormErrors(error: unknown): FormErrorState {
   const classified = classifyError(error);
+  const original = classified.originalError;
 
-  if (
-    classified.originalError instanceof ValidationError &&
-    classified.originalError.field
-  ) {
-    return {
-      [classified.originalError.field]: classified.originalError.message,
-    };
+  if (isFieldValidationError(original)) {
+    return { [original.field]: original.message };
   }
 
-  // For Zod validation errors
-  if (classified.originalError.message.includes("validation")) {
-    try {
-      const zodError = JSON.parse(classified.originalError.message);
-      const errors: FormErrorState = {};
-
-      if (Array.isArray(zodError)) {
-        zodError.forEach((err: any) => {
-          if (err.path && err.message) {
-            errors[err.path.join(".")] = err.message;
-          }
-        });
-      }
-
+  if (original.message.includes("validation")) {
+    const errors = parseZodErrors(original.message);
+    if (errors) {
       return errors;
-    } catch {
-      // If parsing fails, return general error
-      return { _general: getUserFriendlyMessage(error) };
     }
+    return { _general: getUserFriendlyMessage(error) };
   }
 
   return { _general: getUserFriendlyMessage(error) };
@@ -283,7 +275,7 @@ export async function withRetry<T>(
       lastError = error;
 
       if (attempt === maxRetries) {
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       }
 
       // Wait before retrying
@@ -291,7 +283,7 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError;
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 // Debounced error handler for form validation

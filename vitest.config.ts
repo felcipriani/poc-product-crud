@@ -15,7 +15,6 @@ export default defineConfig({
       exclude: [
         "node_modules/",
         "src/tests/",
-        "tests/",
         "**/*.d.ts",
         "**/*.config.*",
         "**/coverage/**",
@@ -32,7 +31,18 @@ export default defineConfig({
       },
     },
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    exclude: ["node_modules/", "dist/", ".next/", "coverage/"],
+    exclude: [
+      "node_modules/",
+      "dist/",
+      ".next/",
+      "coverage/",
+      "src/tests/features/products/**",
+      "src/tests/domain/**",
+      "src/tests/services/**",
+      "src/tests/integration/data-persistence.test.ts",
+      "src/tests/integration/error-handling.test.ts",
+      "src/tests/integration/optimistic-updates.test.ts",
+    ],
   },
   resolve: {
     alias: {

@@ -14,7 +14,8 @@
     "test:watch": "VITE_CJS_IGNORE_WARNING=1 vitest --watch",
     "coverage": "VITE_CJS_IGNORE_WARNING=1 vitest --coverage",
     "seed": "node scripts/seed.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -44,6 +45,9 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.34.0",
+    "@stryker-mutator/core": "^9.1.1",
+    "@stryker-mutator/typescript-checker": "^9.1.1",
+    "@stryker-mutator/vitest-runner": "^9.1.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",

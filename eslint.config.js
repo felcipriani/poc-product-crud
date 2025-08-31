@@ -21,10 +21,9 @@ const config = [
       "dist/**",
       "**/*.test.*",
       "**/*.spec.*",
-      "tests/**",
-      "src/tests/**"
-    ]
-  }
+      "src/tests/**",
+    ],
+  },
 ];
 
 export default config;
